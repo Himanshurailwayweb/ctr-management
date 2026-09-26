@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>CTR Admin Test</title>
+</head>
+
+<body>
+
+  <h2>CTR Admin Security Test</h2>
+
+  <p id="result">
+    Checking login and role...
+  </p>
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+  <script src="js/supabase-config.js"></script>
+
+
+  <script>
+
+    async function checkAdminRole() {
+
+      const result =
+        document.getElementById("result");
+
+
+      try {
+
+        /* ---------------------------------------------
+           1. Check logged-in user
+        --------------------------------------------- */
+
+        const {
+          data: userData,
+          error: userError
+        } =
+          await supabaseClient
+            .auth
+            .getUser();
+
+
+        if (userError) {
+          throw userError;
+        }
+
+
+        if (!userData.user) {
+
+          result.textContent =
+            "❌ No logged-in user found.";
+
+          return;
+        }
+
+
+        /* ---------------------------------------------
+           2. Read current user's role
+        --------------------------------------------- */
+
+        const {
+          data: roles,
+          error: roleError
+        } =
+          await supabaseClient
+            .from("user_roles")
+            .select(
+              "role_code, station_id, is_active"
+            )
+            .eq(
+              "user_id",
+              userData.user.id
+            )
+            .eq(
+              "is_active",
+              true
+            );
+
+
+        if (roleError) {
+          throw roleError;
+        }
+
+
+        const isSystemAdmin =
+          roles.some(
+            function (role) {
+
+              return (
+                role.role_code ===
+                  "SYSTEM_ADMIN" &&
+                role.station_id ===
+                  null
+              );
+
+            }
+          );
+
+
+        if (isSystemAdmin) {
+
+          result.textContent =
+            "✅ SYSTEM_ADMIN verified successfully.";
+
+          result.style.color =
+            "green";
+
+        }
+
+        else {
+
+          result.textContent =
+            "❌ Logged in, but SYSTEM_ADMIN role not found.";
+
+          result.style.color =
+            "red";
+
+        }
+
+
+        console.log(
+          "Logged-in user:",
+          userData.user.email
+        );
+
+
+        console.log(
+          "CTR roles:",
+          roles
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "Admin test error:",
+          error
+        );
+
+
+        result.textContent =
+          "❌ Security test failed: " +
+          error.message;
+
+        result.style.color =
+          "red";
+
+      }
+
+    }
+
+
+    checkAdminRole();
+
+  </script>
+
+</body>
+
+</html>

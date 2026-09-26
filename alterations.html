@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>CTR Alterations | CTR Management</title>
+
+  <link rel="stylesheet" href="css/ctr.css">
+</head>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-logo">IR</div>
+
+      <div>
+        <h2>CTR Management</h2>
+        <span>CTR Engineering Module</span>
+      </div>
+    </div>
+
+
+    <nav class="sidebar-menu">
+
+      <a href="index.html">
+        <span>⌂</span>
+        CTR Overview
+      </a>
+
+      <a href="stations.html">
+        <span>🚉</span>
+        Station CTR
+      </a>
+
+      <a href="alterations.html" class="active">
+        <span>✎</span>
+        Alterations
+      </a>
+
+      <a href="approvals.html">
+        <span>⏳</span>
+        Pending Approvals
+      </a>
+
+      <a href="approved.html">
+        <span>✓</span>
+        Approved CTR / PDFs
+      </a>
+
+      <a href="history.html">
+        <span>◷</span>
+        History
+      </a>
+
+      <a href="../index.html">
+        <span>←</span>
+        Back to Main Website
+      </a>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+      <p>CTR Engineering Module</p>
+      <small>West Central Railway</small>
+    </div>
+
+  </aside>
+
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <section class="page-content">
+
+      <div class="breadcrumb">
+        CTR Management / Alterations
+      </div>
+
+
+      <!-- HEADER -->
+      <section class="ctr-hero">
+
+        <div>
+
+          <span class="hero-tag">
+            CTR ALTERATION MANAGEMENT
+          </span>
+
+          <h2>
+            Alteration Requests
+          </h2>
+
+          <p>
+            All modifications to an approved station CTR will
+            be created, reviewed and tracked from this section.
+          </p>
+
+        </div>
+
+        <div class="hero-status">
+
+          <span>Workflow</span>
+
+          <strong>
+            ● Controlled Process
+          </strong>
+
+        </div>
+
+      </section>
+
+
+      <div class="module-heading">
+
+        <h2>Alteration Status</h2>
+
+        <p>
+          Track CTR alterations through every approval stage
+        </p>
+
+      </div>
+
+
+      <div class="module-grid">
+
+        <!-- NEW ALTERATION -->
+        <article class="module-card primary-card">
+
+          <div class="card-icon">
+            ✎
+          </div>
+
+          <div class="card-content">
+
+            <span class="card-label">
+              NEW REQUEST
+            </span>
+
+            <h3>
+              Create CTR Alteration
+            </h3>
+
+            <p>
+              Select a station and propose conductor,
+              terminal or location changes in the
+              existing approved CTR.
+            </p>
+
+            <button type="button" disabled>
+              Available After Baseline CTR
+            </button>
+
+          </div>
+
+        </article>
+
+
+        <!-- MY ALTERATIONS -->
+        <article class="module-card">
+
+          <div class="card-icon">
+            ◷
+          </div>
+
+          <div class="card-content">
+
+            <span class="card-label">
+              MY REQUESTS
+            </span>
+
+            <h3>
+              Submitted Alterations
+            </h3>
+
+            <p>
+              Track CTR alterations submitted by the
+              logged-in employee.
+            </p>
+
+            <button type="button" disabled>
+              No Requests Yet
+            </button>
+
+          </div>
+
+        </article>
+
+
+        <!-- RETURNED -->
+        <article class="module-card">
+
+          <div class="card-icon">
+            ↩
+          </div>
+
+          <div class="card-content">
+
+            <span class="card-label">
+              CORRECTION
+            </span>
+
+            <h3>
+              Returned for Correction
+            </h3>
+
+            <p>
+              Alterations returned by an officer with
+              verification remarks will appear here.
+            </p>
+
+            <button type="button" disabled>
+              No Returned Requests
+            </button>
+
+          </div>
+
+        </article>
+
+
+        <!-- FINALIZED -->
+        <article class="module-card">
+
+          <div class="card-icon">
+            ✓
+          </div>
+
+          <div class="card-content">
+
+            <span class="card-label">
+              COMPLETED
+            </span>
+
+            <h3>
+              Finalized Alterations
+            </h3>
+
+            <p>
+              View alterations that completed review,
+              approval and final CTR generation.
+            </p>
+
+            <button type="button" disabled>
+              No Finalized Records
+            </button>
+
+          </div>
+
+        </article>
+
+      </div>
+
+
+      <!-- WORKFLOW -->
+      <section class="workflow-section">
+
+        <div class="section-title">
+
+          <h2>
+            Alteration Workflow
+          </h2>
+
+          <p>
+            Proposed change will never directly overwrite the approved CTR.
+          </p>
+
+        </div>
+
+
+        <div class="workflow">
+
+          <div class="workflow-step">
+            <span>1</span>
+            <strong>Proposed</strong>
+            <small>Employee submits change</small>
+          </div>
+
+          <div class="workflow-arrow">
+            →
+          </div>
+
+          <div class="workflow-step">
+            <span>2</span>
+            <strong>Review</strong>
+            <small>Officer verification</small>
+          </div>
+
+          <div class="workflow-arrow">
+            →
+          </div>
+
+          <div class="workflow-step">
+            <span>3</span>
+            <strong>Approval</strong>
+            <small>Authorized approval</small>
+          </div>
+
+          <div class="workflow-arrow">
+            →
+          </div>
+
+          <div class="workflow-step">
+            <span>4</span>
+            <strong>Digital Sign</strong>
+            <small>Final authorization</small>
+          </div>
+
+          <div class="workflow-arrow">
+            →
+          </div>
+
+          <div class="workflow-step">
+            <span>5</span>
+            <strong>New CTR</strong>
+            <small>Version & PDF generated</small>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="station-info-note">
+
+        <strong>Important</strong>
+
+        <p>
+          During the initial CTR data-entry stage, this workflow
+          remains disabled. It will become active only after the
+          station's existing CTR is verified and locked as the
+          baseline version.
+        </p>
+
+      </section>
+
+    </section>
+
+  </main>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="js/role-access.js"></script>
+<script src="js/railway-shell.js"></script>
+
+</body>
+</html>

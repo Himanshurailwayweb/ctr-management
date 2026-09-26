@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    CTR Digital Signing | CTR Management
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
+
+
+  <style>
+
+    /* =====================================================
+       PAGE
+    ===================================================== */
+
+    .signing-page {
+
+      width:
+        100%;
+
+      max-width:
+        1280px;
+
+      margin:
+        0 auto;
+
+      padding:
+        26px 30px 60px;
+
+    }
+
+
+    .signing-breadcrumb {
+
+      margin-bottom:
+        14px;
+
+      color:
+        #61778b;
+
+      font-size:
+        11px;
+
+    }
+
+
+    .signing-page .ctr-hero {
+
+      margin-bottom:
+        18px;
+
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .signing-status {
+
+      margin-bottom:
+        16px;
+
+      padding:
+        11px 13px;
+
+      border:
+        1px solid #d3dde7;
+
+      background:
+        #f8fafc;
+
+      color:
+        #526b82;
+
+      font-size:
+        11px;
+
+      line-height:
+        1.55;
+
+    }
+
+
+    .signing-status[hidden] {
+
+      display:
+        none;
+
+    }
+
+
+    /* =====================================================
+       SUMMARY
+    ===================================================== */
+
+    .signing-summary {
+
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(0, 1fr)
+        );
+
+      gap:
+        10px;
+
+      margin-bottom:
+        18px;
+
+    }
+
+
+    .signing-summary-card {
+
+      min-height:
+        76px;
+
+      padding:
+        13px 15px;
+
+      border:
+        1px solid #d5dee7;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .signing-summary-card span {
+
+      display:
+        block;
+
+      margin-bottom:
+        6px;
+
+      color:
+        #748597;
+
+      font-size:
+        8px;
+
+      font-weight:
+        700;
+
+      letter-spacing:
+        0.6px;
+
+      text-transform:
+        uppercase;
+
+    }
+
+
+    .signing-summary-card strong {
+
+      display:
+        block;
+
+      color:
+        #173e6e;
+
+      font-size:
+        13px;
+
+      line-height:
+        1.4;
+
+    }
+
+
+    .signing-summary-card small {
+
+      display:
+        block;
+
+      margin-top:
+        3px;
+
+      color:
+        #7b8b99;
+
+      font-size:
+        9px;
+
+    }
+
+
+    /* =====================================================
+       LAYOUT
+    ===================================================== */
+
+    .signing-layout {
+
+      display:
+        grid;
+
+      grid-template-columns:
+        minmax(0, 1.05fr)
+        minmax(350px, 0.65fr);
+
+      gap:
+        18px;
+
+      align-items:
+        start;
+
+    }
+
+
+    /* =====================================================
+       PANEL
+    ===================================================== */
+
+    .signing-panel {
+
+      margin-bottom:
+        16px;
+
+      border:
+        1px solid #ccd7e1;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .signing-panel-head {
+
+      padding:
+        13px 15px;
+
+      border-bottom:
+        1px solid #d9e1e8;
+
+      background:
+        #f3f6f9;
+
+    }
+
+
+    .signing-panel-head span {
+
+      display:
+        block;
+
+      margin-bottom:
+        3px;
+
+      color:
+        #748597;
+
+      font-size:
+        8px;
+
+      font-weight:
+        700;
+
+      letter-spacing:
+        0.6px;
+
+      text-transform:
+        uppercase;
+
+    }
+
+
+    .signing-panel-head h3 {
+
+      margin:
+        0;
+
+      color:
+        #234967;
+
+      font-size:
+        14px;
+
+    }
+
+
+    .signing-panel-body {
+
+      padding:
+        16px;
+
+    }
+
+
+    /* =====================================================
+       DOCUMENT INFORMATION
+    ===================================================== */
+
+    .signing-info-grid {
+
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      border:
+        1px solid #dbe3ea;
+
+    }
+
+
+    .signing-info-item {
+
+      min-height:
+        66px;
+
+      padding:
+        10px 11px;
+
+      border-right:
+        1px solid #dbe3ea;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .signing-info-item:last-child {
+
+      border-right:
+        0;
+
+    }
+
+
+    .signing-info-item span {
+
+      display:
+        block;
+
+      margin-bottom:
+        5px;
+
+      color:
+        #718395;
+
+      font-size:
+        8px;
+
+      font-weight:
+        700;
+
+      text-transform:
+        uppercase;
+
+    }
+
+
+    .signing-info-item strong {
+
+      color:
+        #294967;
+
+      font-size:
+        10px;
+
+      line-height:
+        1.45;
+
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .signing-button-row {
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        8px;
+
+      margin-top:
+        13px;
+
+    }
+
+
+    .signing-button-row button {
+
+      min-height:
+        36px;
+
+      padding:
+        0 13px;
+
+      border:
+        1px solid #b8c8d5;
+
+      border-radius:
+        3px;
+
+      background:
+        #ffffff;
+
+      color:
+        #173e6e;
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
+
+      cursor:
+        pointer;
+
+    }
+
+
+    .signing-button-row button:hover:not(:disabled) {
+
+      background:
+        #edf3f8;
+
+    }
+
+
+    .signing-button-row button:disabled {
+
+      cursor:
+        default;
+
+      opacity:
+        0.58;
+
+    }
+
+
+    .signing-button-row
+    .primary-signing-action,
+
+    .signing-button-row
+    .dsc-sign-button {
+
+      border-color:
+        #315d87;
+
+      background:
+        #173e6e;
+
+      color:
+        #ffffff;
+
+    }
+
+
+    .signing-button-row
+    .primary-signing-action:hover:not(:disabled),
+
+    .signing-button-row
+    .dsc-sign-button:hover:not(:disabled) {
+
+      background:
+        #12355d;
+
+    }
+
+
+    /* =====================================================
+       DSC STATUS
+    ===================================================== */
+
+    .dsc-status-box {
+
+      display:
+        grid;
+
+      grid-template-columns:
+        12px 1fr;
+
+      gap:
+        9px;
+
+      align-items:
+        start;
+
+      padding:
+        11px 12px;
+
+      border:
+        1px solid #d7e0e8;
+
+      background:
+        #fafcfd;
+
+    }
+
+
+    .dsc-status-dot {
+
+      width:
+        9px;
+
+      height:
+        9px;
+
+      margin-top:
+        4px;
+
+      border-radius:
+        50%;
+
+      background:
+        #a1adb8;
+
+    }
+
+
+    .dsc-status-box.ready
+    .dsc-status-dot {
+
+      background:
+        #3f7d50;
+
+    }
+
+
+    .dsc-status-box.error
+    .dsc-status-dot {
+
+      background:
+        #a94442;
+
+    }
+
+
+    .dsc-status-box strong {
+
+      display:
+        block;
+
+      color:
+        #294967;
+
+      font-size:
+        11px;
+
+    }
+
+
+    .dsc-status-box small {
+
+      display:
+        block;
+
+      margin-top:
+        3px;
+
+      color:
+        #718395;
+
+      font-size:
+        9px;
+
+      line-height:
+        1.5;
+
+    }
+
+
+    /* =====================================================
+       SIGNER RESULT
+    ===================================================== */
+
+    .dsc-signer-result {
+
+      margin-top:
+        12px;
+
+      padding:
+        12px;
+
+      border:
+        1px solid #bdd5c3;
+
+      background:
+        #f3f8f4;
+
+    }
+
+
+    .dsc-signer-result[hidden] {
+
+      display:
+        none;
+
+    }
+
+
+    .dsc-signer-result > strong {
+
+      display:
+        block;
+
+      margin-bottom:
+        8px;
+
+      color:
+        #356345;
+
+      font-size:
+        11px;
+
+    }
+
+
+    .dsc-signer-grid {
+
+      display:
+        grid;
+
+      grid-template-columns:
+        110px 1fr;
+
+      gap:
+        6px 10px;
+
+      font-size:
+        9px;
+
+      line-height:
+        1.45;
+
+    }
+
+
+    .dsc-signer-grid span {
+
+      color:
+        #708294;
+
+      font-weight:
+        700;
+
+    }
+
+
+    .dsc-signer-grid strong {
+
+      color:
+        #31566b;
+
+      font-weight:
+        600;
+
+      overflow-wrap:
+        anywhere;
+
+    }
+
+
+    /* =====================================================
+       FORM
+    ===================================================== */
+
+    .signing-form-field {
+
+      margin-bottom:
+        13px;
+
+    }
+
+
+    .signing-form-field label {
+
+      display:
+        block;
+
+      margin-bottom:
+        6px;
+
+      color:
+        #415f78;
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
+
+    }
+
+
+    .signing-form-field input,
+
+    .signing-form-field textarea {
+
+      width:
+        100%;
+
+      box-sizing:
+        border-box;
+
+      border:
+        1px solid #c6d3df;
+
+      border-radius:
+        3px;
+
+      background:
+        #ffffff;
+
+      color:
+        #294967;
+
+      font-size:
+        10px;
+
+      outline:
+        none;
+
+    }
+
+
+    .signing-form-field input {
+
+      min-height:
+        38px;
+
+      padding:
+        0 10px;
+
+    }
+
+
+    .signing-form-field textarea {
+
+      min-height:
+        86px;
+
+      padding:
+        9px 10px;
+
+      resize:
+        vertical;
+
+      line-height:
+        1.5;
+
+    }
+
+
+    .signing-form-field input:focus,
+
+    .signing-form-field textarea:focus {
+
+      border-color:
+        #577da1;
+
+    }
+
+
+    /* =====================================================
+       MANUAL FALLBACK
+    ===================================================== */
+
+    .manual-fallback {
+
+      margin-top:
+        14px;
+
+      border-top:
+        1px solid #e0e6eb;
+
+      padding-top:
+        12px;
+
+    }
+
+
+    .manual-fallback summary {
+
+      color:
+        #536d83;
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
+
+      cursor:
+        pointer;
+
+    }
+
+
+    .manual-fallback-body {
+
+      margin-top:
+        12px;
+
+      padding:
+        12px;
+
+      border:
+        1px dashed #b7c5d1;
+
+      background:
+        #fafcfd;
+
+    }
+
+
+    .manual-confirmation {
+
+      display:
+        flex;
+
+      align-items:
+        flex-start;
+
+      gap:
+        8px;
+
+      margin-top:
+        8px;
+
+      color:
+        #617587;
+
+      font-size:
+        9px;
+
+      line-height:
+        1.5;
+
+    }
+
+
+    .manual-confirmation input {
+
+      width:
+        auto;
+
+      min-height:
+        auto;
+
+      margin-top:
+        2px;
+
+    }
+
+
+    .signed-file-result {
+
+      margin-top:
+        9px;
+
+      padding:
+        9px;
+
+      border:
+        1px solid #d9e2e9;
+
+      background:
+        #ffffff;
+
+      color:
+        #5b7185;
+
+      font-size:
+        9px;
+
+      line-height:
+        1.55;
+
+    }
+
+
+    .signed-file-result[hidden] {
+
+      display:
+        none;
+
+    }
+
+
+    /* =====================================================
+       NOTE
+    ===================================================== */
+
+    .workflow-action-note {
+
+      padding:
+        11px 12px;
+
+      border-left:
+        3px solid #8fa8bf;
+
+      background:
+        #f7f9fb;
+
+      color:
+        #61778b;
+
+      font-size:
+        9px;
+
+      line-height:
+        1.6;
+
+    }
+
+
+    .workflow-action-note strong {
+
+      color:
+        #294967;
+
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media
+    (max-width: 1000px) {
+
+      .signing-layout {
+
+        grid-template-columns:
+          1fr;
+
+      }
+
+
+      .signing-summary {
+
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+
+      }
+
+    }
+
+
+    @media
+    (max-width: 650px) {
+
+      .signing-page {
+
+        padding:
+          20px 13px 45px;
+
+      }
+
+
+      .signing-summary,
+
+      .signing-info-grid {
+
+        grid-template-columns:
+          1fr;
+
+      }
+
+
+      .signing-info-item {
+
+        border-right:
+          0;
+
+        border-bottom:
+          1px solid #dbe3ea;
+
+      }
+
+
+      .signing-info-item:last-child {
+
+        border-bottom:
+          0;
+
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <div class="app">
+
+
+    <aside class="sidebar"></aside>
+
+
+    <main class="main-content">
+
+
+      <section class="signing-page">
+
+
+        <div class="signing-breadcrumb">
+
+          CTR Management /
+          Pending Approvals /
+          Digital Signing
+
+        </div>
+
+
+        <section class="ctr-hero">
+
+
+          <div>
+
+            <span class="hero-tag">
+              CTR DIGITAL SIGNING
+            </span>
+
+
+            <h2>
+              Digital Signing
+            </h2>
+
+
+            <p>
+
+              Review the current CTR PDF,
+              apply your authorized DSC and
+              submit the signed document.
+
+            </p>
+
+          </div>
+
+
+          <div class="hero-status">
+
+            <span>
+              Status
+            </span>
+
+            <strong id="signingHeroStatus">
+              ● Loading
+            </strong>
+
+          </div>
+
+
+        </section>
+
+
+        <section
+          id="signingStatus"
+          class="signing-status"
+        >
+
+          Loading signing page...
+
+        </section>
+
+
+        <section class="signing-summary">
+
+
+          <article class="signing-summary-card">
+
+            <span>
+              Station
+            </span>
+
+            <strong id="signingStation">
+              —
+            </strong>
+
+            <small id="signingStationCode">
+              —
+            </small>
+
+          </article>
+
+
+          <article class="signing-summary-card">
+
+            <span>
+              CTR Record
+            </span>
+
+            <strong id="signingRecordName">
+              —
+            </strong>
+
+          </article>
+
+
+          <article class="signing-summary-card">
+
+            <span>
+              Current Stage
+            </span>
+
+            <strong id="signingCurrentStage">
+              —
+            </strong>
+
+            <small id="signingStepProgress">
+              —
+            </small>
+
+          </article>
+
+
+          <article class="signing-summary-card">
+
+            <span>
+              Assigned To
+            </span>
+
+            <strong id="signingAssignedName">
+              —
+            </strong>
+
+            <small id="signingAssignedDesignation">
+              —
+            </small>
+
+          </article>
+
+
+        </section>
+
+
+        <div class="signing-layout">
+
+
+          <div>
+
+
+            <!-- CURRENT PDF -->
+
+            <section class="signing-panel">
+
+
+              <div class="signing-panel-head">
+
+                <span>
+                  CTR DOCUMENT
+                </span>
+
+                <h3>
+                  Current CTR PDF
+                </h3>
+
+              </div>
+
+
+              <div class="signing-panel-body">
+
+
+                <div class="signing-info-grid">
+
+
+                  <div class="signing-info-item">
+
+                    <span>
+                      Status
+                    </span>
+
+                    <strong id="currentDocumentStatus">
+                      Loading...
+                    </strong>
+
+                  </div>
+
+
+                  <div class="signing-info-item">
+
+                    <span>
+                      Document
+                    </span>
+
+                    <strong id="currentDocumentType">
+                      —
+                    </strong>
+
+                  </div>
+
+
+                  <div class="signing-info-item">
+
+                    <span>
+                      Last Signed
+                    </span>
+
+                    <strong id="currentDocumentSignedAt">
+                      —
+                    </strong>
+
+                  </div>
+
+
+                </div>
+
+
+                <div class="signing-button-row">
+
+
+                  <button
+                    type="button"
+                    id="openCurrentDocument"
+                    disabled
+                  >
+
+                    Open PDF
+
+                  </button>
+
+
+                  <button
+                    type="button"
+                    id="downloadCurrentDocument"
+                    disabled
+                  >
+
+                    Download PDF
+
+                  </button>
+
+
+                </div>
+
+
+              </div>
+
+
+            </section>
+
+
+            <!-- DSC SIGNING -->
+
+            <section class="signing-panel">
+
+
+              <div class="signing-panel-head">
+
+                <span>
+                  DIGITAL SIGNATURE
+                </span>
+
+                <h3>
+                  Sign with DSC
+                </h3>
+
+              </div>
+
+
+              <div class="signing-panel-body">
+
+
+                <div
+                  id="dscBridgeStatusBox"
+                  class="dsc-status-box"
+                >
+
+
+                  <div class="dsc-status-dot"></div>
+
+
+                  <div>
+
+                    <strong id="dscBridgeStatus">
+                      Checking DSC Bridge...
+                    </strong>
+
+
+                    <small id="dscBridgeDetail">
+
+                      The signing key and token PIN remain
+                      on the officer's computer / DSC token.
+
+                    </small>
+
+                  </div>
+
+
+                </div>
+
+
+                <div class="signing-button-row">
+
+
+                  <button
+                    type="button"
+                    id="refreshDscBridge"
+                  >
+
+                    Check DSC
+
+                  </button>
+
+
+                  <button
+                    type="button"
+                    id="signWithDscButton"
+                    class="dsc-sign-button"
+                    disabled
+                  >
+
+                    Sign with DSC
+
+                  </button>
+
+
+                </div>
+
+
+                <div
+                  id="dscSignerResult"
+                  class="dsc-signer-result"
+                  hidden
+                >
+
+
+                  <strong>
+                    ✓ Digitally Signed
+                  </strong>
+
+
+                  <div class="dsc-signer-grid">
+
+
+                    <span>
+                      Signer
+                    </span>
+
+                    <strong id="dscSignerName">
+                      —
+                    </strong>
+
+
+                    <span>
+                      Certificate
+                    </span>
+
+                    <strong id="dscCertificateInfo">
+                      —
+                    </strong>
+
+
+                    <span>
+                      Signed At
+                    </span>
+
+                    <strong id="dscSignedAt">
+                      —
+                    </strong>
+
+
+                  </div>
+
+
+                </div>
+
+
+                <!-- MANUAL FALLBACK -->
+
+                <details
+                  class="manual-fallback"
+                  id="manualFallback"
+                >
+
+
+                  <summary>
+                    Manual signed-PDF fallback
+                  </summary>
+
+
+                  <div class="manual-fallback-body">
+
+
+                    <div class="signing-form-field">
+
+                      <label for="signedPdfFile">
+                        Digitally Signed PDF
+                      </label>
+
+
+                      <input
+                        type="file"
+                        id="signedPdfFile"
+                        accept="application/pdf,.pdf"
+                      >
+
+
+                      <div
+                        id="signedFileResult"
+                        class="signed-file-result"
+                        hidden
+                      ></div>
+
+                    </div>
+
+
+                    <div class="signing-form-field">
+
+                      <label for="signatureReference">
+                        DSC / Transaction Reference
+                      </label>
+
+
+                      <input
+                        type="text"
+                        id="signatureReference"
+                        autocomplete="off"
+                        placeholder="Reference from the actual DSC signing process"
+                      >
+
+                    </div>
+
+
+                    <label class="manual-confirmation">
+
+                      <input
+                        type="checkbox"
+                        id="manualSignedConfirmation"
+                      >
+
+                      <span>
+
+                        I confirm that this PDF was digitally
+                        signed using the authorized DSC process.
+
+                        Browser fallback checks the PDF file
+                        but does not independently validate
+                        the certificate chain.
+
+                      </span>
+
+                    </label>
+
+
+                    <div class="signing-button-row">
+
+                      <button
+                        type="button"
+                        id="verifySignedDocument"
+                        disabled
+                      >
+
+                        Check Signed PDF
+
+                      </button>
+
+                    </div>
+
+
+                  </div>
+
+
+                </details>
+
+
+              </div>
+
+
+            </section>
+
+
+          </div>
+
+
+          <!-- RIGHT ACTION COLUMN -->
+
+          <aside>
+
+
+            <section class="signing-panel">
+
+
+              <div class="signing-panel-head">
+
+                <span>
+                  ACTION
+                </span>
+
+                <h3>
+                  Submit CTR
+                </h3>
+
+              </div>
+
+
+              <div class="signing-panel-body">
+
+
+                <div class="signing-form-field">
+
+                  <label for="signingRemarks">
+                    Remarks
+                  </label>
+
+
+                  <textarea
+                    id="signingRemarks"
+                    placeholder="Optional forwarding / approval remarks..."
+                  ></textarea>
+
+                </div>
+
+
+                <div class="workflow-action-note">
+
+                  <strong>
+                    Signing rule:
+                  </strong>
+
+                  <br>
+
+                  Use only the DSC assigned to the officer
+                  taking the current workflow action.
+
+                  The website never asks for or stores the
+                  DSC token PIN.
+
+                </div>
+
+
+                <div class="signing-button-row">
+
+
+                  <button
+                    type="button"
+                    id="completeSigningAction"
+                    class="primary-signing-action"
+                    disabled
+                  >
+
+                    Submit & Forward
+
+                  </button>
+
+
+                </div>
+
+
+              </div>
+
+
+            </section>
+
+
+          </aside>
+
+
+        </div>
+
+
+      </section>
+
+
+    </main>
+
+
+  </div>
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+  <script src="js/supabase-config.js"></script>
+
+  <script src="js/auth-guard.js"></script>
+
+  <script src="js/role-access.js"></script>
+
+  <script src="js/railway-shell.js"></script>
+
+  <script src="js/embridge-adapter.js"></script>
+
+  <script src="js/workflow-sign.js"></script>
+
+  <script src="js/ctr-pdf-generator.js"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Station CTR | CTR Management</title>
+
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
+</head>
+
+
+<body>
+
+<div class="app">
+
+  <!-- =====================================================
+       SIDEBAR
+  ====================================================== -->
+
+  <aside class="sidebar">
+
+    <div class="sidebar-brand">
+
+      <div class="brand-mark">
+        CTR
+      </div>
+
+      <div>
+        <strong>
+          CTR Management
+        </strong>
+
+        <span>
+          Engineering Module
+        </span>
+      </div>
+
+    </div>
+
+
+    <nav class="sidebar-nav">
+
+      <a href="index.html">
+        <span>⌂</span>
+        CTR Overview
+      </a>
+
+
+      <a
+        href="divisions.html"
+        class="active"
+      >
+        <span>▣</span>
+        Station CTR
+      </a>
+
+
+      <a href="alterations.html">
+        <span>✎</span>
+        Alterations
+      </a>
+
+
+      <a href="approvals.html">
+        <span>⌛</span>
+        Pending Approvals
+      </a>
+
+
+      <a href="approved.html">
+        <span>✓</span>
+        Approved CTR / PDFs
+      </a>
+
+
+      <a href="history.html">
+        <span>◷</span>
+        History
+      </a>
+
+
+      <!-- SYSTEM ADMIN ONLY -->
+      <a
+        href="administration.html"
+        data-system-admin-only
+        hidden
+      >
+        <span>⚙</span>
+        Administration
+      </a>
+
+
+      <a href="../index.html">
+        <span>←</span>
+        Back to Main Website
+      </a>
+
+    </nav>
+
+
+    <div class="sidebar-footer">
+
+      <strong>
+        CTR Engineering Module
+      </strong>
+
+      <span>
+        West Central Railway
+      </span>
+
+    </div>
+
+  </aside>
+
+
+  <!-- =====================================================
+       MAIN CONTENT
+  ====================================================== -->
+
+  <main class="main-content">
+
+    <header class="topbar">
+
+      <div>
+
+        <span class="eyebrow">
+          STATION CTR
+        </span>
+
+        <h1>
+          Station
+        </h1>
+
+      </div>
+
+
+      <a
+        href="divisions.html"
+        class="topbar-back"
+      >
+        ← Divisions & Stations
+      </a>
+
+    </header>
+
+
+    <section class="page-content">
+
+
+      <!-- =================================================
+           STATION HERO
+      ================================================== -->
+
+      <section class="station-hero">
+
+        <div>
+
+          <span class="hero-label">
+            STATION CTR DRAWING
+          </span>
+
+          <h2>
+            Station
+          </h2>
+
+          <p>
+            Complete station CTR structure including
+            CTR racks, fuse details, conductors,
+            connected ends and location boxes.
+          </p>
+
+        </div>
+
+
+        <div class="hero-actions">
+
+          <!-- EDIT / INITIAL SETUP CONTROL -->
+          <button
+            type="button"
+            id="initialDataEntryButton"
+            class="hero-action-btn"
+            data-station-edit-control
+          >
+            Initial Data Entry
+          </button>
+
+
+          <!-- WORKFLOW CONTROL - LATER ALTERATION PHASE -->
+          <button
+            type="button"
+            id="modifyCtrButton"
+            class="hero-action-btn"
+            data-station-modify-control
+          >
+            Modify CTR
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           SUMMARY
+      ================================================== -->
+
+      <section class="station-summary-grid">
+
+        <article class="summary-card">
+
+          <span>
+            Station
+          </span>
+
+          <strong>
+            Station
+          </strong>
+
+        </article>
+
+
+        <article class="summary-card">
+
+          <span>
+            CTR Status
+          </span>
+
+          <strong>
+            Initial Setup
+          </strong>
+
+        </article>
+
+
+        <article class="summary-card">
+
+          <span>
+            Current Version
+          </span>
+
+          <strong>
+            Draft V0
+          </strong>
+
+        </article>
+
+
+        <article class="summary-card">
+
+          <span>
+            Conductor Status
+          </span>
+
+          <strong>
+            All SPARE
+          </strong>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           QUICK NAVIGATION
+      ================================================== -->
+
+      <section class="quick-navigation">
+
+        <strong>
+          Station CTR Structure
+        </strong>
+
+
+        <div class="quick-links">
+
+          <a href="#station-racks">
+            CTR Racks
+          </a>
+
+          <a href="#station-racks">
+            Fuse Details
+          </a>
+
+          <a href="#station-racks">
+            CTR Terminals
+          </a>
+
+          <a href="#connected-ends">
+            Connected Ends
+          </a>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           SAVE CONTROLS
+      ================================================== -->
+
+      <section
+        class="ctr-save-controls"
+        data-station-edit-control
+      >
+
+        <div>
+
+          <span>
+            INITIAL CTR DATA
+          </span>
+
+          <strong>
+            Station CTR Draft
+          </strong>
+
+          <small id="draftSaveStatus">
+            Database draft
+          </small>
+
+        </div>
+
+
+        <div class="ctr-save-actions">
+
+  <button
+    type="button"
+    id="resetCtrDraft"
+    class="secondary-action"
+  >
+    Reset Draft
+  </button>
+
+
+  <button
+    type="button"
+    id="saveCtrDraft"
+    class="primary-action"
+  >
+    Save Draft
+  </button>
+  <button
+  type="button"
+  id="submitBaseline"
+  class="primary-action"
+>
+  Prepare Initial CTR Workflow
+  </button>
+
+  <button
+    type="button"
+    id="submitCtrBaseline"
+    class="primary-action"
+    hidden
+  >
+    Submit for Approval
+  </button>
+
+</div>
+
+      </section>
+
+
+      <!-- =================================================
+           STATION CTR RACKS
+      ================================================== -->
+
+      <section
+        class="station-builder-section"
+        id="station-racks"
+      >
+
+        <div class="section-heading">
+
+          <div>
+
+            <span>
+              STATION CTR
+            </span>
+
+            <h2>
+              CTR Racks
+            </h2>
+
+          </div>
+
+
+          <button
+            type="button"
+            id="addStationCtrRack"
+            class="builder-action-btn"
+            data-station-edit-control
+          >
+            + Add CTR Rack
+          </button>
+
+        </div>
+
+
+        <section class="station-info-note">
+
+          <strong>
+            CTR Rack Structure
+          </strong>
+
+          <p>
+            Add K1, K2, K3 or any additional CTR rack
+            required for this station. Each rack can
+            contain its own fuse details, rows and
+            conductor terminals.
+          </p>
+
+        </section>
+
+
+        <!-- station.js builds K1 / K2 / K3 here -->
+
+        <div id="stationCtrRacksContainer"></div>
+
+      </section>
+
+
+      <!-- =================================================
+           FUSE POINT EDITOR
+      ================================================== -->
+
+      <section
+        class="terminal-editor"
+        id="fuseEditor"
+        data-station-edit-control
+      >
+
+        <div class="terminal-editor-header">
+
+          <div>
+
+            <span>
+              FUSE POINT DETAILS
+            </span>
+
+            <h3 id="selectedFuseTitle">
+              Fuse Point
+            </h3>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="editor-close-btn"
+            id="closeFuseEditor"
+            aria-label="Close Fuse Editor"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <div class="terminal-form-grid">
+
+          <div class="terminal-form-field">
+
+            <label for="fuseLabelInput">
+              Fuse No. / Label
+            </label>
+
+            <input
+              type="text"
+              id="fuseLabelInput"
+              placeholder="Example: F1"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="fuseDetailsInput">
+              Fuse Details / Circuit Particular
+            </label>
+
+            <textarea
+              id="fuseDetailsInput"
+              rows="4"
+              placeholder="Example: B24V 24V AXT BUS"
+            ></textarea>
+
+          </div>
+
+        </div>
+
+
+        <div class="terminal-editor-actions">
+
+          <button
+            type="button"
+            class="secondary-action"
+            id="cancelFuseEdit"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="button"
+            class="primary-action"
+            id="saveFuseEdit"
+          >
+            Save Fuse
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           TERMINAL EDITOR
+      ================================================== -->
+
+      <section
+        class="terminal-editor"
+        id="terminalEditor"
+        data-station-edit-control
+      >
+
+        <div class="terminal-editor-header">
+
+          <div>
+
+            <span>
+              INITIAL CTR DATA ENTRY
+            </span>
+
+            <h3 id="selectedTerminalTitle">
+              Select a conductor
+            </h3>
+
+          </div>
+
+
+          <button
+            type="button"
+            id="closeTerminalEditor"
+            class="editor-close-btn"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <div class="terminal-current-state">
+
+          <span>
+            Current Status
+          </span>
+
+          <strong id="currentTerminalStatus">
+            SPARE
+          </strong>
+
+        </div>
+
+
+        <div class="terminal-form-grid">
+
+          <div class="terminal-form-field">
+
+            <label for="circuitParticular">
+              Circuit / Signal Particular
+            </label>
+
+            <input
+              type="text"
+              id="circuitParticular"
+              placeholder="Enter circuit / particular"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="locationBox">
+              Connected Location
+            </label>
+
+            <input
+              type="text"
+              id="locationBox"
+              placeholder="Enter connected location"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="locationTerminal">
+              Connected Terminal / Conductor
+            </label>
+
+            <input
+              type="text"
+              id="locationTerminal"
+              placeholder="Enter terminal number"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="terminalStatus">
+              Status
+            </label>
+
+            <select id="terminalStatus">
+
+              <option value="SPARE">
+                SPARE
+              </option>
+
+              <option value="IN USE">
+                IN USE
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="terminal-form-field full-width">
+
+          <label for="terminalRemarks">
+            Remarks
+          </label>
+
+          <textarea
+            id="terminalRemarks"
+            rows="3"
+            placeholder="Enter remarks if required"
+          ></textarea>
+
+        </div>
+
+
+        <div class="terminal-editor-actions">
+
+          <button
+            type="button"
+            id="cancelTerminalEdit"
+            class="secondary-action"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="button"
+            id="saveTerminalPreview"
+            class="primary-action"
+          >
+            Save Initial Data
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           CONNECTED ENDS
+      ================================================== -->
+
+      <section
+        class="connected-ends-section"
+        id="connected-ends"
+      >
+
+        <div class="section-heading">
+
+          <div>
+
+            <span>
+              STATION CONNECTION
+            </span>
+
+            <h2>
+              Connected Ends
+            </h2>
+
+          </div>
+
+
+          <button
+            type="button"
+            id="addConnectedEnd"
+            class="builder-action-btn"
+            data-station-edit-control
+          >
+            + Add End
+          </button>
+
+        </div>
+
+
+        <section class="station-info-note">
+
+          <strong>
+            End Structure
+          </strong>
+
+          <p>
+            End names are editable and are not fixed as
+            END-A or END-B. Add the actual station End,
+            then add the Location Boxes belonging to that End.
+          </p>
+
+        </section>
+
+
+        <!-- station.js builds ends + location boxes here -->
+
+        <div id="connectedEndsContainer"></div>
+
+      </section>
+
+
+      <!-- =================================================
+           VERSION / WORKFLOW STATUS
+      ================================================== -->
+
+      <section class="station-version-strip">
+
+        <div>
+
+          <strong>
+            Current State
+          </strong>
+
+          <span>
+            Initial CTR Data Entry
+          </span>
+
+        </div>
+
+
+        <div>
+
+          <strong>
+            Baseline
+          </strong>
+
+          <span>
+            Not Locked
+          </span>
+
+        </div>
+
+
+        <div>
+
+          <strong>
+            Alterations
+          </strong>
+
+          <span>
+            Disabled During Initial Setup
+          </span>
+
+        </div>
+
+
+        <div>
+
+          <strong>
+            History
+          </strong>
+
+          <span>
+            No Approved Versions Yet
+          </span>
+
+        </div>
+
+      </section>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<!-- =======================================================
+     SCRIPTS
+
+     IMPORTANT ORDER:
+     Supabase
+       ↓
+     Config
+       ↓
+     Authentication
+       ↓
+     Role Access
+       ↓
+     Station Context
+       ↓
+     Station Builder
+======================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="js/role-access.js"></script>
+
+<script src="js/railway-shell.js"></script>
+
+<script src="js/station-context.js"></script>
+<script src="js/station.js"></script>
+<script src="js/drawing-ui.js"></script>
+<script src="js/drawing-grid-controls.js"></script>
+<script src="js/baseline-submit.js"></script>
+
+</body>
+
+</html>

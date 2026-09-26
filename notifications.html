@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Notifications & Activity | CTR Management
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
+
+
+  <style>
+
+    /* =====================================================
+       NOTIFICATION / ACTIVITY PAGE
+    ===================================================== */
+
+    .notification-page-header {
+      margin-bottom: 22px;
+    }
+
+
+    .notification-summary-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 12px;
+
+      margin-bottom: 20px;
+    }
+
+
+    .notification-summary-card {
+      padding: 15px 17px;
+
+      border:
+        1px solid #ccd7e2;
+
+      border-radius: 5px;
+
+      background: #ffffff;
+    }
+
+
+    .notification-summary-card span {
+      display: block;
+
+      margin-bottom: 7px;
+
+      color: #6a7d90;
+
+      font-size: 9px;
+      font-weight: 700;
+
+      letter-spacing: 0.8px;
+
+      text-transform: uppercase;
+    }
+
+
+    .notification-summary-card strong {
+      display: block;
+
+      color: #173e6e;
+
+      font-size: 23px;
+      font-weight: 700;
+    }
+
+
+    .activity-toolbar {
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 14px;
+
+      margin-bottom: 16px;
+
+      padding: 12px;
+
+      border:
+        1px solid #ccd7e2;
+
+      border-radius: 5px;
+
+      background: #ffffff;
+    }
+
+
+    .activity-search {
+      flex: 1;
+
+      min-width: 220px;
+
+      height: 38px;
+
+      padding:
+        0 12px;
+
+      border:
+        1px solid #c5d0db;
+
+      border-radius: 4px;
+
+      background: #ffffff;
+
+      color: #243b53;
+
+      font-size: 12px;
+    }
+
+
+    .activity-filter-group {
+      display: flex;
+
+      align-items: center;
+
+      gap: 6px;
+
+      overflow-x: auto;
+    }
+
+
+    .activity-filter-btn {
+      flex:
+        0 0 auto;
+
+      min-height: 36px;
+
+      padding:
+        0 11px;
+
+      border:
+        1px solid #c8d3df;
+
+      border-radius: 4px;
+
+      background: #f8fafc;
+
+      color: #274968;
+
+      font-size: 10px;
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+
+    .activity-filter-btn:hover {
+      background: #edf3f8;
+    }
+
+
+    .activity-filter-btn.active {
+      border-color: #173e6e;
+
+      background: #173e6e;
+
+      color: #ffffff;
+    }
+
+
+    .activity-toolbar-actions {
+      display: flex;
+
+      gap: 7px;
+
+      flex:
+        0 0 auto;
+    }
+
+
+    .activity-toolbar-actions button {
+      min-height: 36px;
+
+      padding:
+        0 11px;
+
+      border:
+        1px solid #bfcbd7;
+
+      border-radius: 4px;
+
+      background: #ffffff;
+
+      color: #274968;
+
+      font-size: 10px;
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+
+    .activity-toolbar-actions button:hover {
+      background: #edf3f8;
+    }
+
+
+    .activity-list {
+      display: grid;
+
+      gap: 12px;
+    }
+
+
+    .activity-record {
+      position: relative;
+
+      overflow: hidden;
+
+      border:
+        1px solid #c8d3df;
+
+      border-radius: 5px;
+
+      background: #ffffff;
+    }
+
+
+    .activity-record.unread {
+      border-left:
+        4px solid #1f5d98;
+
+      background: #fbfdff;
+    }
+
+
+    .activity-record-header {
+      display: flex;
+
+      align-items: flex-start;
+
+      justify-content: space-between;
+
+      gap: 18px;
+
+      padding:
+        15px 18px;
+
+      border-bottom:
+        1px solid #dce4eb;
+
+      background: #f7f9fb;
+    }
+
+
+    .activity-record-header-left {
+      min-width: 0;
+    }
+
+
+    .activity-event-label {
+      display: block;
+
+      margin-bottom: 5px;
+
+      color: #5f7387;
+
+      font-size: 9px;
+      font-weight: 700;
+
+      letter-spacing: 0.8px;
+
+      text-transform: uppercase;
+    }
+
+
+    .activity-record-title {
+      margin: 0;
+
+      color: #173e6e;
+
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+
+    .activity-record-time {
+      flex:
+        0 0 auto;
+
+      color: #718095;
+
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+
+    .activity-record-body {
+      padding:
+        16px 18px;
+    }
+
+
+    .activity-user-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 1px;
+
+      margin-bottom: 15px;
+
+      overflow: hidden;
+
+      border:
+        1px solid #d3dce5;
+
+      border-radius: 4px;
+
+      background: #d3dce5;
+    }
+
+
+    .activity-user-grid > div {
+      padding:
+        11px 12px;
+
+      background: #ffffff;
+    }
+
+
+    .activity-user-grid span {
+      display: block;
+
+      margin-bottom: 4px;
+
+      color: #718095;
+
+      font-size: 8px;
+      font-weight: 700;
+
+      letter-spacing: 0.5px;
+
+      text-transform: uppercase;
+    }
+
+
+    .activity-user-grid strong {
+      display: block;
+
+      color: #263f58;
+
+      font-size: 11px;
+      font-weight: 700;
+
+      overflow-wrap: anywhere;
+    }
+
+
+    .activity-section {
+      margin-top: 13px;
+
+      padding-top: 13px;
+
+      border-top:
+        1px solid #e0e6ec;
+    }
+
+
+    .activity-section:first-of-type {
+      margin-top: 0;
+
+      padding-top: 0;
+
+      border-top: 0;
+    }
+
+
+    .activity-section-title {
+      margin:
+        0 0 9px;
+
+      color: #31506e;
+
+      font-size: 10px;
+      font-weight: 700;
+
+      letter-spacing: 0.6px;
+
+      text-transform: uppercase;
+    }
+
+
+    .activity-message {
+      margin: 0;
+
+      color: #4a6176;
+
+      font-size: 12px;
+
+      line-height: 1.55;
+    }
+
+
+    .activity-change-list {
+      display: grid;
+
+      gap: 7px;
+    }
+
+
+    .activity-change-row {
+      display: grid;
+
+      grid-template-columns:
+        minmax(120px, 0.7fr)
+        minmax(0, 1fr)
+        34px
+        minmax(0, 1fr);
+
+      align-items: center;
+
+      gap: 8px;
+
+      padding:
+        9px 10px;
+
+      border:
+        1px solid #dbe3ea;
+
+      border-radius: 4px;
+
+      background: #fafbfd;
+    }
+
+
+    .activity-change-field {
+      color: #304d69;
+
+      font-size: 10px;
+      font-weight: 700;
+
+      overflow-wrap: anywhere;
+    }
+
+
+    .activity-old-value,
+    .activity-new-value {
+      min-width: 0;
+
+      padding:
+        6px 8px;
+
+      border:
+        1px solid #d7dfe7;
+
+      border-radius: 3px;
+
+      background: #ffffff;
+
+      color: #52687c;
+
+      font-size: 10px;
+
+      overflow-wrap: anywhere;
+    }
+
+
+    .activity-change-arrow {
+      color: #75889b;
+
+      text-align: center;
+
+      font-size: 14px;
+    }
+
+
+    .activity-record-actions {
+      display: flex;
+
+      align-items: center;
+
+      justify-content: flex-end;
+
+      gap: 7px;
+
+      margin-top: 15px;
+    }
+
+
+    .activity-record-actions a,
+    .activity-record-actions button {
+      min-height: 32px;
+
+      display:
+        inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      padding:
+        0 10px;
+
+      border:
+        1px solid #c4d0db;
+
+      border-radius: 4px;
+
+      background: #ffffff;
+
+      color: #214c76;
+
+      text-decoration: none;
+
+      font-size: 9px;
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+
+    .activity-record-actions a:hover,
+    .activity-record-actions button:hover {
+      background: #edf3f8;
+    }
+
+
+    .activity-status {
+      display:
+        inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      margin-top: 10px;
+
+      color: #5d7185;
+
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+
+    .activity-status-dot {
+      width: 7px;
+      height: 7px;
+
+      border-radius: 50%;
+
+      background: #1f5d98;
+    }
+
+
+    .activity-empty,
+    .activity-error,
+    .activity-loading {
+      padding:
+        45px 20px;
+
+      border:
+        1px solid #d2dce5;
+
+      border-radius: 5px;
+
+      background: #ffffff;
+
+      text-align: center;
+
+      color: #687b8e;
+
+      font-size: 12px;
+    }
+
+
+    .activity-error {
+      color: #a13b3b;
+    }
+
+
+    @media
+    (max-width: 1000px) {
+
+      .notification-summary-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+
+      .activity-user-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+
+      .activity-toolbar {
+        align-items:
+          stretch;
+
+        flex-direction:
+          column;
+      }
+
+    }
+
+
+    @media
+    (max-width: 650px) {
+
+      .notification-summary-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .activity-user-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .activity-record-header {
+        flex-direction:
+          column;
+      }
+
+
+      .activity-record-time {
+        white-space:
+          normal;
+      }
+
+
+      .activity-change-row {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .activity-change-arrow {
+        transform:
+          rotate(90deg);
+      }
+
+
+      .activity-record-actions {
+        align-items:
+          stretch;
+
+        flex-direction:
+          column;
+      }
+
+
+      .activity-record-actions a,
+      .activity-record-actions button {
+        width: 100%;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <div class="app">
+
+
+    <main class="main-content">
+
+
+      <section class="page-content">
+
+
+        <!-- BREADCRUMB -->
+
+        <div class="breadcrumb">
+
+          CTR Management /
+          Notifications & Activity
+
+        </div>
+
+
+        <!-- =================================================
+             HERO
+        ================================================== -->
+
+        <section class="ctr-hero notification-page-header">
+
+          <div>
+
+            <span class="hero-tag">
+              SYSTEM ACTIVITY RECORD
+            </span>
+
+            <h2>
+              Notifications & Activity Log
+            </h2>
+
+            <p>
+              Review CTR editing, modifications,
+              approvals, signing actions and other
+              important system activity.
+            </p>
+
+          </div>
+
+
+          <div class="hero-status">
+
+            <span>
+              AUDIT STATUS
+            </span>
+
+            <strong>
+              ● Permanent Record
+            </strong>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             SUMMARY
+        ================================================== -->
+
+        <section
+          class="notification-summary-grid"
+          aria-label="Activity summary"
+        >
+
+
+          <article class="notification-summary-card">
+
+            <span>
+              Total Activity
+            </span>
+
+            <strong id="activityTotalCount">
+              —
+            </strong>
+
+          </article>
+
+
+          <article class="notification-summary-card">
+
+            <span>
+              Unread
+            </span>
+
+            <strong id="activityUnreadCount">
+              —
+            </strong>
+
+          </article>
+
+
+          <article class="notification-summary-card">
+
+            <span>
+              CTR Updates
+            </span>
+
+            <strong id="activityCtrCount">
+              —
+            </strong>
+
+          </article>
+
+
+          <article class="notification-summary-card">
+
+            <span>
+              Approval / Sign
+            </span>
+
+            <strong id="activityApprovalCount">
+              —
+            </strong>
+
+          </article>
+
+
+        </section>
+
+
+        <!-- =================================================
+             TOOLBAR
+        ================================================== -->
+
+        <section class="activity-toolbar">
+
+
+          <input
+            type="search"
+            id="activitySearch"
+            class="activity-search"
+            placeholder="Search user, designation, station or action..."
+            autocomplete="off"
+          >
+
+
+          <div
+            class="activity-filter-group"
+            id="activityFilterGroup"
+          >
+
+            <button
+              type="button"
+              class="activity-filter-btn active"
+              data-activity-filter="ALL"
+            >
+              All
+            </button>
+
+            <button
+              type="button"
+              class="activity-filter-btn"
+              data-activity-filter="UNREAD"
+            >
+              Unread
+            </button>
+
+            <button
+              type="button"
+              class="activity-filter-btn"
+              data-activity-filter="CTR"
+            >
+              CTR Edits
+            </button>
+
+            <button
+              type="button"
+              class="activity-filter-btn"
+              data-activity-filter="ALTERATION"
+            >
+              Alterations
+            </button>
+
+            <button
+              type="button"
+              class="activity-filter-btn"
+              data-activity-filter="APPROVAL"
+            >
+              Approval
+            </button>
+
+            <button
+              type="button"
+              class="activity-filter-btn"
+              data-activity-filter="SIGN"
+            >
+              Signing
+            </button>
+
+            <button
+              type="button"
+              class="activity-filter-btn"
+              data-activity-filter="ACCESS"
+            >
+              User / Role
+            </button>
+
+          </div>
+
+
+          <div class="activity-toolbar-actions">
+
+            <button
+              type="button"
+              id="refreshActivity"
+            >
+              Refresh
+            </button>
+
+            <button
+              type="button"
+              id="markAllActivityRead"
+            >
+              Mark All Read
+            </button>
+
+          </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             STATUS
+        ================================================== -->
+
+        <section
+          id="activityStatus"
+          class="station-info-note"
+        >
+
+          <strong>
+            Loading activity records
+          </strong>
+
+          <p>
+            Connecting to the secure audit and
+            notification database...
+          </p>
+
+        </section>
+
+
+        <!-- =================================================
+             ACTIVITY RECORDS
+        ================================================== -->
+
+        <section
+          id="activityList"
+          class="activity-list"
+          aria-live="polite"
+        >
+
+
+          <div class="activity-loading">
+
+            Loading notifications and audit records...
+
+          </div>
+
+
+        </section>
+
+
+      </section>
+
+
+    </main>
+
+
+  </div>
+
+
+  <!-- =====================================================
+       SUPABASE
+  ====================================================== -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+
+  <script src="js/supabase-config.js"></script>
+
+  <script src="js/auth-guard.js"></script>
+
+  <script src="js/role-access.js"></script>
+
+  <script src="js/railway-shell.js"></script>
+
+  <script src="js/notifications.js"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Station CTR | CTR Management</title>
+
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- =====================================================
+       SIDEBAR
+  ====================================================== -->
+  <aside class="sidebar">
+
+    <div class="sidebar-brand">
+
+      <div class="brand-mark">
+        CTR
+      </div>
+
+      <div>
+        <strong>CTR Management</strong>
+        <span>Engineering Module</span>
+      </div>
+
+    </div>
+
+
+    <nav class="sidebar-nav">
+
+      <a href="index.html">
+        <span>⌂</span>
+        CTR Overview
+      </a>
+
+      <a
+        href="divisions.html"
+        class="active"
+      >
+        <span>▦</span>
+        Divisions & Stations
+      </a>
+
+      <a href="alterations.html">
+        <span>✎</span>
+        Alterations
+      </a>
+
+      <a href="approvals.html">
+        <span>⌛</span>
+        Pending Approvals
+      </a>
+
+      <a href="approved.html">
+        <span>✓</span>
+        Approved CTR / PDFs
+      </a>
+
+      <a href="history.html">
+        <span>◷</span>
+        History
+      </a>
+
+      <a href="../index.html">
+        <span>←</span>
+        Back to Main Website
+      </a>
+
+    </nav>
+
+
+    <div class="sidebar-footer">
+
+      <strong>
+        CTR Engineering Module
+      </strong>
+
+      <span>
+        West Central Railway
+      </span>
+
+    </div>
+
+  </aside>
+
+
+  <!-- =====================================================
+       MAIN CONTENT
+  ====================================================== -->
+  <main class="main-content">
+
+    <header class="topbar">
+
+      <div>
+
+        <span class="eyebrow">
+          STATION MANAGEMENT
+        </span>
+
+        <h1 id="divisionPageTitle">
+          Station CTR
+        </h1>
+
+      </div>
+
+    </header>
+
+
+    <section class="page-content">
+
+      <!-- =================================================
+           BACK TO DIVISIONS
+      ================================================== -->
+      <div style="margin-bottom: 18px;">
+
+        <a
+          href="divisions.html"
+          class="secondary-action"
+          style="
+            display:inline-flex;
+            text-decoration:none;
+            align-items:center;
+            gap:6px;
+          "
+        >
+          ← Back to Divisions
+        </a>
+
+      </div>
+
+
+      <!-- =================================================
+           PAGE HEADING
+      ================================================== -->
+      <section class="stations-page-heading">
+
+        <div>
+
+          <span>
+            SELECTED DIVISION
+          </span>
+
+          <h2 id="selectedDivisionHeading">
+            Loading Division...
+          </h2>
+
+          <p id="selectedDivisionDescription">
+            Loading division information...
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          id="showAddStation"
+          class="builder-action-btn"
+        >
+          + Add Station
+        </button>
+
+      </section>
+
+
+      <!-- =================================================
+           DIVISION INFORMATION
+      ================================================== -->
+      <section
+        class="station-search-bar"
+        style="margin-bottom:18px;"
+      >
+
+        <div>
+
+          <strong id="divisionContextName">
+            Loading...
+          </strong>
+
+          <span
+            id="divisionContextCode"
+            style="margin-left:10px;"
+          >
+          </span>
+
+        </div>
+
+        <span id="divisionZone">
+        </span>
+
+      </section>
+
+
+      <!-- =================================================
+           ADD / EDIT STATION PANEL
+      ================================================== -->
+      <section
+        class="add-station-panel"
+        id="addStationPanel"
+      >
+
+        <div class="add-station-header">
+
+          <div>
+
+            <span id="stationFormEyebrow">
+              NEW STATION
+            </span>
+
+            <h3 id="stationFormTitle">
+              Add Station
+            </h3>
+
+          </div>
+
+
+          <button
+            type="button"
+            id="closeAddStation"
+            class="editor-close-btn"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <div class="station-form-grid">
+
+          <div class="terminal-form-field">
+
+            <label for="stationName">
+              Station Name
+            </label>
+
+            <input
+              type="text"
+              id="stationName"
+              placeholder="Example: Narsinghpur"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="stationCode">
+              Station Code
+            </label>
+
+            <input
+              type="text"
+              id="stationCode"
+              placeholder="Example: NU"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="stationSection">
+              Sectional Incharge Designation
+            </label>
+
+            <input
+              type="text"
+              id="stationSection"
+              placeholder="Example: SSE/Sig/NU"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="stationDivision">
+              Division
+            </label>
+
+            <input
+              type="text"
+              id="stationDivision"
+              readonly
+              title="Division is selected from the Divisions page"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div class="add-station-actions">
+
+          <button
+            type="button"
+            id="cancelAddStation"
+            class="secondary-action"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="button"
+            id="saveNewStation"
+            class="primary-action"
+          >
+            Save Station
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           SEARCH
+      ================================================== -->
+      <section class="station-search-bar">
+
+        <input
+          type="text"
+          id="stationSearch"
+          placeholder="Search station name, code or sectional incharge..."
+        >
+
+        <span id="stationCount">
+          0 Stations
+        </span>
+
+      </section>
+
+
+      <!-- =================================================
+           STATION LIST
+      ================================================== -->
+      <section
+        class="station-list-grid"
+        id="stationList"
+      >
+      </section>
+
+
+      <!-- =================================================
+           EMPTY STATE
+      ================================================== -->
+      <section
+        class="stations-empty-state"
+        id="stationsEmptyState"
+      >
+
+        <strong>
+          No stations found
+        </strong>
+
+        <p>
+          Add a station under this division to start CTR data entry.
+        </p>
+
+      </section>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<!-- =======================================================
+     SCRIPTS
+======================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="js/role-access.js"></script>
+<script src="js/stations.js"></script>
+<script src="js/railway-shell.js"></script>
+
+</body>
+
+</html>

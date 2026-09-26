@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Supabase Test</title>
+</head>
+
+<body>
+
+  <h2>Supabase Connection Test</h2>
+
+  <p id="result">
+    Checking connection...
+  </p>
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+  <script src="js/supabase-config.js"></script>
+
+
+  <script>
+
+    async function testSupabaseConnection() {
+
+      const result =
+        document.getElementById("result");
+
+
+      try {
+
+        const {
+          data,
+          error
+        } =
+          await supabaseClient.auth.getSession();
+
+
+        if (error) {
+          throw error;
+        }
+
+
+        result.textContent =
+          "✅ Supabase connected successfully.";
+
+        console.log(
+          "Supabase connection working.",
+          data
+        );
+
+      }
+
+      catch (error) {
+
+        result.textContent =
+          "❌ Supabase connection failed.";
+
+        console.error(
+          "Supabase Error:",
+          error
+        );
+
+      }
+
+    }
+
+
+    testSupabaseConnection();
+
+  </script>
+
+</body>
+</html>

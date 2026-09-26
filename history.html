@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>CTR History | CTR Management</title>
+
+  <link rel="stylesheet" href="css/ctr.css">
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-logo">IR</div>
+
+      <div>
+        <h2>CTR Management</h2>
+        <span>CTR Engineering Module</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-menu">
+
+      <a href="index.html">
+        <span>⌂</span>
+        CTR Overview
+      </a>
+
+      <a href="stations.html">
+        <span>🚉</span>
+        Station CTR
+      </a>
+
+      <a href="alterations.html">
+        <span>✎</span>
+        Alterations
+      </a>
+
+      <a href="approvals.html">
+        <span>⏳</span>
+        Pending Approvals
+      </a>
+
+      <a href="approved.html">
+        <span>✓</span>
+        Approved CTR / PDFs
+      </a>
+
+      <a href="history.html" class="active">
+        <span>◷</span>
+        History
+      </a>
+
+      <a href="../index.html">
+        <span>←</span>
+        Back to Main Website
+      </a>
+
+    </nav>
+
+    <div class="sidebar-bottom">
+      <p>CTR Engineering Module</p>
+      <small>West Central Railway</small>
+    </div>
+
+  </aside>
+
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <section class="page-content">
+
+      <div class="breadcrumb">
+        CTR Management / History
+      </div>
+
+
+      <!-- HERO -->
+      <section class="ctr-hero">
+
+        <div>
+
+          <span class="hero-tag">
+            CTR AUDIT TRAIL
+          </span>
+
+          <h2>
+            Complete CTR History
+          </h2>
+
+          <p>
+            Track every station CTR revision, alteration,
+            officer action, approval and archived version.
+          </p>
+
+        </div>
+
+        <div class="hero-status">
+
+          <span>History Status</span>
+
+          <strong>
+            ● No Records Yet
+          </strong>
+
+        </div>
+
+      </section>
+
+
+      <!-- FILTER AREA -->
+      <section class="station-toolbar">
+
+        <div class="station-search">
+
+          <label for="historySearch">
+            Search History
+          </label>
+
+          <input
+            type="text"
+            id="historySearch"
+            placeholder="Search station, alteration no. or user"
+          >
+
+        </div>
+
+        <div class="station-count">
+
+          <span>Total Records</span>
+          <strong>0</strong>
+
+        </div>
+
+      </section>
+
+
+      <!-- SUMMARY CARDS -->
+      <div class="module-heading">
+
+        <h2>History Categories</h2>
+
+        <p>
+          Records will be grouped by status and revision type.
+        </p>
+
+      </div>
+
+
+      <div class="module-grid">
+
+        <!-- ALL ALTERATIONS -->
+        <article class="module-card primary-card">
+
+          <div class="card-icon">
+            ◷
+          </div>
+
+          <div class="card-content">
+
+            <span class="card-label">
+              COMPLETE LOG
+            </span>
+
+            <h3>
+              All Alterations
+            </h3>
+
+            <p>
+              View every CTR alteration created for all
+              configured stations.
+            </p>
+
+            <button type="button" disabled>
+              No Alterations Yet
+            </button>
+
+          </div>
+
+        </article>
+
+
+        <!-- APPROVAL HISTORY -->
+        <article class="module-card">
+
+          <div class="card-icon">
+            ✓
+          </div>
+
+          <div class="card-content">
+
+            <span class="card-label">
+              OFFICER ACTIONS
+            </span>
+
+            <h3>
+              Approval History
+            </h3>
+
+            <p>
+              Track review, approval, rejection and return
+              actions performed by authorized officers.
+            </p>
+
+            <button type="button" disabled>
+              No Approval History
+            </button>
+
+          </div>
+
+        </article>
+
+
+        <!-- VERSION HISTORY -->
+        <article class="module-card">
+
+          <div class="card-icon">
+            ▤
+          </div>
+
+          <div class="card-content">
+
+            <span class="card-label">
+              VERSION CONTROL
+            </span>
+
+            <h3>
+              CTR Version History
+            </h3>
+
+            <p>
+              View baseline, current, superseded and revised
+              CTR versions station-wise.
+            </p>
+
+            <button type="button" disabled>
+              No Versions Yet
+            </button>
+
+          </div>
+
+        </article>
+
+
+        <!-- CORRECTION HISTORY -->
+        <article class="module-card">
+
+          <div class="card-icon">
+            ↻
+          </div>
+
+          <div class="card-content">
+
+            <span class="card-label">
+              CORRECTION TRAIL
+            </span>
+
+            <h3>
+              Reopened / Corrected CTR
+            </h3>
+
+            <p>
+              View approved CTR records that were reopened
+              by an authorized officer for controlled correction.
+            </p>
+
+            <button type="button" disabled>
+              No Corrections Yet
+            </button>
+
+          </div>
+
+        </article>
+
+      </div>
+
+
+      <!-- FUTURE HISTORY RECORD -->
+      <section class="workflow-section">
+
+        <div class="section-title">
+
+          <h2>
+            Audit Record Structure
+          </h2>
+
+          <p>
+            Every important CTR action will create a permanent traceable record.
+          </p>
+
+        </div>
+
+
+        <div class="station-summary-grid">
+
+          <div class="summary-card">
+            <span>Station</span>
+            <strong>—</strong>
+          </div>
+
+          <div class="summary-card">
+            <span>Alteration No.</span>
+            <strong>—</strong>
+          </div>
+
+          <div class="summary-card">
+            <span>Action By</span>
+            <strong>—</strong>
+          </div>
+
+          <div class="summary-card">
+            <span>Date & Time</span>
+            <strong>—</strong>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- AUDIT FLOW -->
+      <section class="workflow-section">
+
+        <div class="section-title">
+
+          <h2>
+            Audit Trail
+          </h2>
+
+          <p>
+            Old and new values will remain traceable through the complete workflow.
+          </p>
+
+        </div>
+
+
+        <div class="workflow">
+
+          <div class="workflow-step">
+            <span>1</span>
+            <strong>Created</strong>
+            <small>User identity recorded</small>
+          </div>
+
+          <div class="workflow-arrow">
+            →
+          </div>
+
+          <div class="workflow-step">
+            <span>2</span>
+            <strong>Modified</strong>
+            <small>Old & new value stored</small>
+          </div>
+
+          <div class="workflow-arrow">
+            →
+          </div>
+
+          <div class="workflow-step">
+            <span>3</span>
+            <strong>Reviewed</strong>
+            <small>Officer remarks stored</small>
+          </div>
+
+          <div class="workflow-arrow">
+            →
+          </div>
+
+          <div class="workflow-step">
+            <span>4</span>
+            <strong>Approved</strong>
+            <small>Approval trail stored</small>
+          </div>
+
+          <div class="workflow-arrow">
+            →
+          </div>
+
+          <div class="workflow-step">
+            <span>5</span>
+            <strong>Archived</strong>
+            <small>Version & PDF retained</small>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- NOTE -->
+      <section class="station-info-note">
+
+        <strong>Permanent Record Principle</strong>
+
+        <p>
+          CTR history should not be treated like an ordinary editable list.
+          When a value changes, the previous value, responsible user,
+          date/time, approval information and resulting CTR version will
+          remain available in the audit trail instead of being silently deleted.
+        </p>
+
+      </section>
+
+    </section>
+
+  </main>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="js/role-access.js"></script>
+<script src="js/railway-shell.js"></script>
+</body>
+</html>

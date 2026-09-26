@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Approved CTR / PDFs | CTR Management
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
+
+
+  <style>
+
+    /* =====================================================
+       APPROVED CTR / PDF REGISTER
+    ===================================================== */
+
+    .approved-page {
+
+      width: 100%;
+      max-width: 1500px;
+
+      margin: 0 auto;
+
+      padding: 28px 32px 60px;
+
+    }
+
+
+    /* =====================================================
+       BREADCRUMB
+    ===================================================== */
+
+    .approved-breadcrumb {
+
+      margin-bottom: 16px;
+
+      color: #567089;
+
+      font-size: 11px;
+
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .approved-page .ctr-hero {
+
+      margin-bottom: 22px;
+
+    }
+
+
+    /* =====================================================
+       SUMMARY
+    ===================================================== */
+
+    .approved-summary {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(0, 1fr)
+        );
+
+      gap: 12px;
+
+      margin-bottom: 18px;
+
+    }
+
+
+    .approved-summary-card {
+
+      min-height: 84px;
+
+      padding: 16px 18px;
+
+      border:
+        1px solid #d4dee8;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .approved-summary-card span {
+
+      display: block;
+
+      margin-bottom: 8px;
+
+      color:
+        #718397;
+
+      font-size:
+        9px;
+
+      font-weight:
+        700;
+
+      letter-spacing:
+        0.7px;
+
+      text-transform:
+        uppercase;
+
+    }
+
+
+    .approved-summary-card strong {
+
+      display: block;
+
+      color:
+        #173e6e;
+
+      font-size:
+        23px;
+
+      line-height:
+        1;
+
+    }
+
+
+    /* =====================================================
+       TOOLBAR
+    ===================================================== */
+
+    .approved-toolbar {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 10px;
+
+      margin-bottom: 17px;
+
+      padding: 12px;
+
+      border:
+        1px solid #d3dde7;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .approved-toolbar input {
+
+      flex: 1 1 auto;
+
+      min-width: 0;
+
+      height: 38px;
+
+      padding: 0 12px;
+
+      border:
+        1px solid #c7d3df;
+
+      border-radius:
+        3px;
+
+      background:
+        #ffffff;
+
+      color:
+        #274760;
+
+      font-size:
+        11px;
+
+      outline:
+        none;
+
+    }
+
+
+    .approved-toolbar input:focus {
+
+      border-color:
+        #577da1;
+
+    }
+
+
+    .approved-toolbar button {
+
+      min-height: 38px;
+
+      padding: 0 15px;
+
+      border:
+        1px solid #bfcddb;
+
+      border-radius:
+        3px;
+
+      background:
+        #ffffff;
+
+      color:
+        #173e6e;
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
+
+      cursor:
+        pointer;
+
+    }
+
+
+    .approved-toolbar button:hover {
+
+      background:
+        #edf3f8;
+
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .approved-status {
+
+      margin-bottom: 14px;
+
+      padding: 12px 14px;
+
+      border:
+        1px solid #d3dde7;
+
+      background:
+        #f8fafc;
+
+      color:
+        #526b82;
+
+      font-size:
+        11px;
+
+    }
+
+
+    .approved-status[hidden] {
+
+      display: none;
+
+    }
+
+
+    /* =====================================================
+       REGISTER
+    ===================================================== */
+
+    .approved-register-wrap {
+
+      width: 100%;
+
+      overflow-x: auto;
+
+      border:
+        1px solid #cbd6e0;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .approved-register {
+
+      width: 100%;
+
+      min-width: 1180px;
+
+      border-collapse:
+        collapse;
+
+    }
+
+
+    .approved-register th {
+
+      padding: 11px 10px;
+
+      border-right:
+        1px solid #d3dde6;
+
+      border-bottom:
+        1px solid #bdcad6;
+
+      background:
+        #edf2f7;
+
+      color:
+        #294967;
+
+      text-align:
+        left;
+
+      font-size:
+        9px;
+
+      font-weight:
+        700;
+
+      letter-spacing:
+        0.55px;
+
+      text-transform:
+        uppercase;
+
+      white-space:
+        nowrap;
+
+    }
+
+
+    .approved-register td {
+
+      padding: 13px 10px;
+
+      border-right:
+        1px solid #e0e6ec;
+
+      border-bottom:
+        1px solid #dbe3ea;
+
+      color:
+        #415c72;
+
+      font-size:
+        11px;
+
+      vertical-align:
+        middle;
+
+    }
+
+
+    .approved-register
+    th:last-child,
+
+    .approved-register
+    td:last-child {
+
+      border-right: 0;
+
+    }
+
+
+    .approved-register tbody tr:hover {
+
+      background:
+        #f8fafc;
+
+    }
+
+
+    .approved-sno {
+
+      width: 55px;
+
+      color:
+        #173e6e !important;
+
+      text-align:
+        center;
+
+      font-weight:
+        700;
+
+    }
+
+
+    .approved-station {
+
+      color:
+        #173e6e !important;
+
+      font-weight:
+        700;
+
+    }
+
+
+    .approved-station-code {
+
+      display: block;
+
+      margin-top: 3px;
+
+      color:
+        #7a8b9a;
+
+      font-size:
+        9px;
+
+      font-weight:
+        600;
+
+    }
+
+
+    /* =====================================================
+       RECORD
+    ===================================================== */
+
+    .approved-record-name {
+
+      color:
+        #173e6e;
+
+      font-size:
+        11px;
+
+      font-weight:
+        700;
+
+    }
+
+
+    .approved-record-sub {
+
+      display: block;
+
+      margin-top: 4px;
+
+      color:
+        #718294;
+
+      font-size:
+        9px;
+
+    }
+
+
+    /* =====================================================
+       PDF STATE
+    ===================================================== */
+
+    .approved-pdf-state {
+
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      min-height: 26px;
+
+      padding:
+        4px 8px;
+
+      border:
+        1px solid #d5dee7;
+
+      border-radius:
+        3px;
+
+      background:
+        #f8fafc;
+
+      color:
+        #64788b;
+
+      font-size:
+        9px;
+
+      font-weight:
+        700;
+
+      white-space:
+        nowrap;
+
+    }
+
+
+    .approved-pdf-state.available {
+
+      border-color:
+        #bfd3c6;
+
+      background:
+        #f2f8f4;
+
+      color:
+        #356345;
+
+    }
+
+
+    /* =====================================================
+       ACTIONS
+    ===================================================== */
+
+    .approved-actions {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 6px;
+
+      white-space:
+        nowrap;
+
+    }
+
+
+    .approved-actions a,
+
+    .approved-actions span {
+
+      min-height: 31px;
+
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      padding:
+        0 10px;
+
+      border:
+        1px solid #bdcad6;
+
+      border-radius:
+        3px;
+
+      background:
+        #ffffff;
+
+      color:
+        #173e6e;
+
+      text-decoration:
+        none;
+
+      font-size:
+        9px;
+
+      font-weight:
+        700;
+
+    }
+
+
+    .approved-actions a:hover {
+
+      background:
+        #edf3f8;
+
+    }
+
+
+    .approved-actions
+    .open-ctr-action {
+
+      border-color:
+        #345f89;
+
+      background:
+        #173e6e;
+
+      color:
+        #ffffff;
+
+    }
+
+
+    .approved-actions
+    .open-ctr-action:hover {
+
+      background:
+        #12345c;
+
+    }
+
+
+    .approved-actions
+    .disabled-action {
+
+      border-color:
+        #d6dee6;
+
+      background:
+        #f5f7f9;
+
+      color:
+        #98a5b1;
+
+      cursor:
+        default;
+
+    }
+
+
+    /* =====================================================
+       EMPTY
+    ===================================================== */
+
+    .approved-empty {
+
+      padding: 45px 20px;
+
+      border:
+        1px solid #d3dde6;
+
+      background:
+        #ffffff;
+
+      text-align:
+        center;
+
+    }
+
+
+    .approved-empty strong {
+
+      display: block;
+
+      margin-bottom: 7px;
+
+      color:
+        #274967;
+
+      font-size:
+        14px;
+
+    }
+
+
+    .approved-empty p {
+
+      margin: 0;
+
+      color:
+        #718294;
+
+      font-size:
+        11px;
+
+    }
+
+
+    /* =====================================================
+       NOTE
+    ===================================================== */
+
+    .approved-note {
+
+      margin-top: 16px;
+
+      padding: 13px 15px;
+
+      border-left:
+        3px solid #8fa8bf;
+
+      background:
+        #f7f9fb;
+
+      color:
+        #63788b;
+
+      font-size:
+        10px;
+
+      line-height:
+        1.65;
+
+    }
+
+
+    .approved-note strong {
+
+      color:
+        #294967;
+
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media
+    (max-width: 1000px) {
+
+      .approved-summary {
+
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+
+      }
+
+    }
+
+
+    @media
+    (max-width: 800px) {
+
+      .approved-page {
+
+        padding:
+          20px 14px 45px;
+
+      }
+
+
+      .approved-summary {
+
+        grid-template-columns:
+          1fr;
+
+      }
+
+
+      .approved-toolbar {
+
+        align-items:
+          stretch;
+
+        flex-direction:
+          column;
+
+      }
+
+
+      .approved-toolbar button {
+
+        width: 100%;
+
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <div class="app">
+
+
+    <aside class="sidebar"></aside>
+
+
+    <main class="main-content">
+
+
+      <section class="approved-page">
+
+
+        <!-- BREADCRUMB -->
+
+        <div class="approved-breadcrumb">
+
+          CTR Management /
+          Approved CTR / PDFs
+
+        </div>
+
+
+
+        <!-- HERO -->
+
+        <section class="ctr-hero">
+
+
+          <div>
+
+            <span class="hero-tag">
+
+              CONTROLLED CTR RECORDS
+
+            </span>
+
+
+            <h2>
+
+              Approved CTR / PDFs
+
+            </h2>
+
+
+            <p>
+
+              View final approved CTR records and permanent
+              station-wise PDF documents after completion of
+              the authorized forwarding and approval workflow.
+
+            </p>
+
+          </div>
+
+
+          <div class="hero-status">
+
+            <span>
+
+              Record Status
+
+            </span>
+
+            <strong>
+
+              ● Final Approved Records
+
+            </strong>
+
+          </div>
+
+
+        </section>
+
+
+
+        <!-- SUMMARY -->
+
+        <section class="approved-summary">
+
+
+          <article class="approved-summary-card">
+
+            <span>
+              Approved CTR
+            </span>
+
+            <strong id="approvedCtrCount">
+              0
+            </strong>
+
+          </article>
+
+
+          <article class="approved-summary-card">
+
+            <span>
+              Initial CTR
+            </span>
+
+            <strong id="initialCtrCount">
+              0
+            </strong>
+
+          </article>
+
+
+          <article class="approved-summary-card">
+
+            <span>
+              Modifications
+            </span>
+
+            <strong id="approvedModificationCount">
+              0
+            </strong>
+
+          </article>
+
+
+          <article class="approved-summary-card">
+
+            <span>
+              Final PDFs
+            </span>
+
+            <strong id="finalPdfCount">
+              0
+            </strong>
+
+          </article>
+
+
+        </section>
+
+
+
+        <!-- SEARCH -->
+
+        <section class="approved-toolbar">
+
+
+          <input
+            type="search"
+            id="approvedCtrSearch"
+            placeholder="Search station, code, division, sectional incharge or CTR record..."
+            autocomplete="off"
+          >
+
+
+          <button
+            type="button"
+            id="refreshApprovedCtr"
+          >
+            Refresh
+          </button>
+
+
+        </section>
+
+
+
+        <!-- STATUS -->
+
+        <section
+          id="approvedCtrStatus"
+          class="approved-status"
+          hidden
+        ></section>
+
+
+
+        <!-- REGISTER -->
+
+        <section id="approvedCtrList">
+
+
+          <div class="approved-empty">
+
+            <strong>
+              Loading approved CTR records...
+            </strong>
+
+            <p>
+              Reading authorized final CTR records.
+            </p>
+
+          </div>
+
+
+        </section>
+
+
+
+        <!-- RECORD NOTE -->
+
+        <div class="approved-note">
+
+          <strong>Record Control:</strong>
+
+          The first final approved CTR is displayed as
+          <strong>Initial CTR</strong>.
+
+          Later approved changes will be displayed as
+          <strong>
+            1st Modification,
+            2nd Modification,
+            3rd Modification
+          </strong>
+          and so on.
+
+          Forwarding, digital-signature and officer review
+          records remain preserved in the workflow and audit
+          history. Only the final approved PDF is shown in
+          this archive.
+
+        </div>
+
+
+      </section>
+
+
+    </main>
+
+
+  </div>
+
+
+
+  <!-- SCRIPTS -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+  <script src="js/supabase-config.js"></script>
+
+  <script src="js/auth-guard.js"></script>
+
+  <script src="js/role-access.js"></script>
+
+  <script src="js/railway-shell.js"></script>
+
+  <script src="js/approved.js"></script>
+
+
+</body>
+
+</html>

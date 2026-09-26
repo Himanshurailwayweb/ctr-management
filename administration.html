@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Administration | CTR Management
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
+
+
+  <style>
+
+    /* =====================================================
+       APPROVAL ROUTE MANAGEMENT
+    ===================================================== */
+
+    .route-admin-panel {
+
+      margin-top: 28px;
+
+      padding: 20px;
+
+      border:
+        1px solid #d4dee8;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .route-admin-heading {
+
+      display: flex;
+
+      align-items: flex-start;
+
+      justify-content: space-between;
+
+      gap: 20px;
+
+      margin-bottom: 18px;
+
+    }
+
+
+    .route-admin-heading span {
+
+      display: block;
+
+      margin-bottom: 5px;
+
+      color:
+        #718397;
+
+      font-size:
+        9px;
+
+      font-weight:
+        700;
+
+      letter-spacing:
+        0.7px;
+
+      text-transform:
+        uppercase;
+
+    }
+
+
+    .route-admin-heading h3 {
+
+      margin: 0;
+
+      color:
+        #173e6e;
+
+      font-size:
+        18px;
+
+    }
+
+
+    .route-admin-heading p {
+
+      margin:
+        7px 0 0;
+
+      color:
+        #718294;
+
+      font-size:
+        10px;
+
+      line-height:
+        1.6;
+
+    }
+
+
+    .route-form-grid {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 14px;
+
+      margin-bottom: 18px;
+
+    }
+
+
+    .route-step-list {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 10px;
+
+      margin-top: 12px;
+
+    }
+
+
+    .route-step-row {
+
+      display: grid;
+
+      grid-template-columns:
+        52px
+        minmax(180px, 1.2fr)
+        minmax(180px, 1fr)
+        minmax(130px, 0.8fr)
+        auto;
+
+      align-items: center;
+
+      gap: 10px;
+
+      padding: 11px;
+
+      border:
+        1px solid #d5dfe8;
+
+      background:
+        #f8fafc;
+
+    }
+
+
+    .route-step-order {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      width: 34px;
+
+      height: 34px;
+
+      border:
+        1px solid #c3d0dc;
+
+      border-radius: 3px;
+
+      background:
+        #ffffff;
+
+      color:
+        #173e6e;
+
+      font-size:
+        11px;
+
+      font-weight:
+        700;
+
+    }
+
+
+    .route-step-row select,
+
+    .route-step-row input {
+
+      width: 100%;
+
+      min-width: 0;
+
+      height: 36px;
+
+      padding:
+        0 10px;
+
+      border:
+        1px solid #c7d3df;
+
+      border-radius:
+        3px;
+
+      background:
+        #ffffff;
+
+      color:
+        #294967;
+
+      font-size:
+        10px;
+
+      outline:
+        none;
+
+    }
+
+
+    .route-step-controls {
+
+      display: flex;
+
+      gap: 5px;
+
+      white-space: nowrap;
+
+    }
+
+
+    .route-step-controls button {
+
+      min-width: 30px;
+
+      height: 32px;
+
+      padding:
+        0 8px;
+
+      border:
+        1px solid #c3d0dc;
+
+      border-radius:
+        3px;
+
+      background:
+        #ffffff;
+
+      color:
+        #173e6e;
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
+
+      cursor:
+        pointer;
+
+    }
+
+
+    .route-step-controls button:hover {
+
+      background:
+        #edf3f8;
+
+    }
+
+
+    .route-step-controls
+    .remove-route-step {
+
+      color:
+        #8b3636;
+
+    }
+
+
+    .route-actions {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 12px;
+
+      margin-top: 16px;
+
+    }
+
+
+    .route-actions-left,
+
+    .route-actions-right {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+    }
+
+
+    .route-status {
+
+      margin-top: 14px;
+
+      padding: 11px 13px;
+
+      border:
+        1px solid #d3dde7;
+
+      background:
+        #f8fafc;
+
+      color:
+        #526b82;
+
+      font-size:
+        10px;
+
+    }
+
+
+    .route-status[hidden] {
+
+      display: none;
+
+    }
+
+
+    .route-existing-wrap {
+
+      margin-top: 25px;
+
+      border-top:
+        1px solid #dbe3ea;
+
+      padding-top: 20px;
+
+    }
+
+
+    .route-existing-wrap h4 {
+
+      margin:
+        0 0 12px;
+
+      color:
+        #294967;
+
+      font-size:
+        13px;
+
+    }
+
+
+    .route-existing-list {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 10px;
+
+    }
+
+
+    .route-existing-card {
+
+      padding: 14px;
+
+      border:
+        1px solid #d5dfe8;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .route-existing-card strong {
+
+      display: block;
+
+      color:
+        #173e6e;
+
+      font-size:
+        12px;
+
+    }
+
+
+    .route-existing-card small {
+
+      display: block;
+
+      margin-top: 4px;
+
+      color:
+        #718294;
+
+      font-size:
+        9px;
+
+    }
+
+
+    .route-existing-steps {
+
+      margin-top: 10px;
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      gap: 6px;
+
+    }
+
+
+    .route-existing-step {
+
+      padding:
+        5px 8px;
+
+      border:
+        1px solid #cbd6e0;
+
+      border-radius:
+        3px;
+
+      background:
+        #f6f9fb;
+
+      color:
+        #425f77;
+
+      font-size:
+        9px;
+
+    }
+
+
+    @media
+    (max-width: 1050px) {
+
+      .route-form-grid {
+
+        grid-template-columns:
+          1fr;
+
+      }
+
+
+      .route-step-row {
+
+        grid-template-columns:
+          45px 1fr;
+
+      }
+
+
+      .route-step-row
+      > :nth-child(n+3) {
+
+        grid-column:
+          2;
+
+      }
+
+    }
+
+
+    @media
+    (max-width: 700px) {
+
+      .route-actions {
+
+        align-items:
+          stretch;
+
+        flex-direction:
+          column;
+
+      }
+
+
+      .route-actions-left,
+
+      .route-actions-right {
+
+        width: 100%;
+
+      }
+
+
+      .route-actions-left button,
+
+      .route-actions-right button {
+
+        flex: 1;
+
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+<div class="app">
+
+
+  <!-- =====================================================
+       OLD SIDEBAR PLACEHOLDER
+       railway-shell.js provides current top navigation
+  ====================================================== -->
+
+  <aside class="sidebar"></aside>
+
+
+  <!-- =====================================================
+       MAIN
+  ====================================================== -->
+
+  <main class="main-content">
+
+
+    <section class="page-content">
+
+
+      <!-- =================================================
+           ADMIN HERO
+      ================================================== -->
+
+      <section class="ctr-hero">
+
+        <div>
+
+          <span class="hero-tag">
+            SYSTEM ADMINISTRATION
+          </span>
+
+          <h2>
+            User, Role & Approval Route Management
+          </h2>
+
+          <p>
+            Maintain railway user profiles, access permissions
+            and dynamic CTR approval routing.
+          </p>
+
+        </div>
+
+
+        <div class="hero-status">
+
+          <span>
+            SECURITY MODEL
+          </span>
+
+          <strong>
+            Role Based Access
+          </strong>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           SECURITY NOTE
+      ================================================== -->
+
+      <section class="station-info-note">
+
+        <strong>
+          Controlled Administration
+        </strong>
+
+        <p>
+          Permissions and workflow routing are enforced by
+          secure database functions and Row Level Security.
+          Running CTR workflows retain their historical route
+          even if the administration template changes later.
+        </p>
+
+      </section>
+
+
+      <!-- =================================================
+           ROLE ASSIGNMENT
+      ================================================== -->
+
+      <section
+        class="add-station-panel open"
+        id="roleAssignmentPanel"
+      >
+
+        <div class="add-station-header">
+
+          <div>
+
+            <span>
+              ROLE ASSIGNMENT
+            </span>
+
+            <h3>
+              Assign User Role
+            </h3>
+
+          </div>
+
+        </div>
+
+
+        <div class="station-form-grid">
+
+
+          <!-- USER -->
+
+          <div class="terminal-form-field">
+
+            <label for="roleUser">
+              User
+            </label>
+
+            <select id="roleUser">
+
+              <option value="">
+                Select User
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- ROLE -->
+
+          <div class="terminal-form-field">
+
+            <label for="roleCode">
+              Role
+            </label>
+
+            <select id="roleCode">
+
+              <option value="">
+                Select Role
+              </option>
+
+              <option value="SYSTEM_ADMIN">
+                System Admin
+              </option>
+
+              <option value="STATION_USER">
+                Station User
+              </option>
+
+              <option value="EMPLOYEE">
+                Employee
+              </option>
+
+              <option value="REVIEW_OFFICER">
+                Review Officer
+              </option>
+
+              <option value="APPROVING_OFFICER">
+                Approving Officer
+              </option>
+
+              <option value="FINAL_SIGNATORY">
+                Final Signatory
+              </option>
+
+              <option value="CORRECTION_AUTHORITY">
+                Correction Authority
+              </option>
+
+              <option value="VIEWER">
+                Viewer
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- SCOPE -->
+
+          <div class="terminal-form-field">
+
+            <label for="roleScopeType">
+              Access Scope
+            </label>
+
+            <select id="roleScopeType">
+
+              <option value="">
+                Select Scope
+              </option>
+
+              <option value="GLOBAL">
+                Global
+              </option>
+
+              <option value="DIVISION">
+                Division
+              </option>
+
+              <option value="STATION">
+                Station
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- DIVISION -->
+
+          <div
+            class="terminal-form-field"
+            id="roleDivisionField"
+          >
+
+            <label for="roleDivision">
+              Division
+            </label>
+
+            <select id="roleDivision">
+
+              <option value="">
+                Select Division
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- STATION -->
+
+          <div
+            class="terminal-form-field"
+            id="roleStationField"
+          >
+
+            <label for="roleStation">
+              Station
+            </label>
+
+            <select id="roleStation">
+
+              <option value="">
+                Select Station
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div
+          id="roleMessage"
+          style="margin-top: 12px;"
+        ></div>
+
+
+        <div class="add-station-actions">
+
+          <button
+            type="button"
+            id="clearRoleForm"
+            class="secondary-action"
+          >
+            Clear
+          </button>
+
+
+          <button
+            type="button"
+            id="assignRole"
+            class="primary-action"
+          >
+            Assign Role
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           APPROVAL ROUTE MANAGEMENT
+      ================================================== -->
+
+      <section
+        class="route-admin-panel"
+        id="approvalRoutePanel"
+      >
+
+        <div class="route-admin-heading">
+
+          <div>
+
+            <span>
+              APPROVAL ROUTING
+            </span>
+
+            <h3>
+              CTR Approval Route Management
+            </h3>
+
+            <p>
+              Configure the review officers and final senior
+              officer for a station or division. The user who
+              actually prepares and submits the CTR becomes the
+              first workflow step automatically.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- ROUTE MASTER -->
+
+        <div class="route-form-grid">
+
+
+          <div class="terminal-form-field">
+
+            <label for="routeScopeType">
+              Route Scope
+            </label>
+
+            <select id="routeScopeType">
+
+              <option value="">
+                Select Scope
+              </option>
+
+              <option value="DIVISION">
+                Division
+              </option>
+
+              <option value="STATION">
+                Station
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div
+            class="terminal-form-field"
+            id="routeDivisionField"
+          >
+
+            <label for="routeDivision">
+              Division
+            </label>
+
+            <select id="routeDivision">
+
+              <option value="">
+                Select Division
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div
+            class="terminal-form-field"
+            id="routeStationField"
+          >
+
+            <label for="routeStation">
+              Station
+            </label>
+
+            <select id="routeStation">
+
+              <option value="">
+                Select Station
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="routeName">
+              Route Name
+            </label>
+
+            <input
+              type="text"
+              id="routeName"
+              placeholder="Example: Jabalpur CTR Approval Route"
+              autocomplete="off"
+            >
+
+          </div>
+
+        </div>
+
+
+        <!-- ROUTE STEPS -->
+
+        <div class="section-heading">
+
+          <div>
+
+            <span>
+              OFFICER SEQUENCE
+            </span>
+
+            <h2>
+              Approval Route
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div
+          id="routeStepList"
+          class="route-step-list"
+        ></div>
+
+
+        <!-- ROUTE ACTIONS -->
+
+        <div class="route-actions">
+
+
+          <div class="route-actions-left">
+
+            <button
+              type="button"
+              id="addReviewOfficer"
+              class="secondary-action"
+            >
+              + Add Review Officer
+            </button>
+
+          </div>
+
+
+          <div class="route-actions-right">
+
+            <button
+              type="button"
+              id="clearApprovalRoute"
+              class="secondary-action"
+            >
+              Clear
+            </button>
+
+
+            <button
+              type="button"
+              id="saveApprovalRoute"
+              class="primary-action"
+            >
+              Save Approval Route
+            </button>
+
+          </div>
+
+
+        </div>
+
+
+        <div
+          id="approvalRouteMessage"
+          class="route-status"
+          hidden
+        ></div>
+
+
+        <!-- EXISTING ROUTES -->
+
+        <div class="route-existing-wrap">
+
+          <h4>
+            Configured Approval Routes
+          </h4>
+
+          <div
+            id="approvalRouteList"
+            class="route-existing-list"
+          >
+
+            <div class="route-existing-card">
+
+              <strong>
+                Loading approval routes...
+              </strong>
+
+              <small>
+                Reading route configuration from the database.
+              </small>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+      </section>
+
+
+      <!-- =================================================
+           USER DIRECTORY
+      ================================================== -->
+
+      <section class="section-heading">
+
+        <div>
+
+          <span>
+            AUTHORIZED USERS
+          </span>
+
+          <h2>
+            Railway User Directory
+          </h2>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           USER SEARCH
+      ================================================== -->
+
+      <section class="station-search-bar">
+
+        <input
+          type="search"
+          id="userSearch"
+          placeholder="Search user name, employee number or designation..."
+          autocomplete="off"
+        >
+
+        <span id="userCount">
+          0 Users
+        </span>
+
+      </section>
+
+
+      <!-- =================================================
+           USERS
+      ================================================== -->
+
+      <section>
+
+        <div
+          id="userList"
+          class="station-list-grid"
+        ></div>
+
+
+        <div
+          id="usersEmptyState"
+          class="stations-empty-state"
+        >
+
+          <strong>
+            No Users Found
+          </strong>
+
+          <p>
+            Authorized railway users will appear here.
+          </p>
+
+        </div>
+
+      </section>
+
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<!-- =====================================================
+     SCRIPTS
+===================================================== -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+></script>
+
+<script src="js/supabase-config.js"></script>
+
+<script src="js/auth-guard.js"></script>
+
+<script src="js/role-access.js"></script>
+
+<script src="js/railway-shell.js"></script>
+
+<script src="js/administration.js"></script>
+
+<script src="js/approval-route-admin.js"></script>
+
+</body>
+
+</html>

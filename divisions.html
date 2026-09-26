@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Divisions | CTR Management</title>
+
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
+</head>
+
+
+<body>
+
+<div class="app">
+
+  <!-- =====================================================
+       OLD SIDEBAR
+       railway-shell.js hides this and creates top navigation
+  ====================================================== -->
+
+  <aside class="sidebar">
+
+    <div class="sidebar-brand">
+      <strong>CTR</strong>
+      <span>Management System</span>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <a href="index.html">
+        CTR Overview
+      </a>
+
+      <a
+        href="divisions.html"
+        class="active"
+      >
+        Divisions & Stations
+      </a>
+
+      <a href="alterations.html">
+        Alterations
+      </a>
+
+      <a href="approvals.html">
+        Pending Approvals
+      </a>
+
+      <a href="approved.html">
+        Approved CTR / PDFs
+      </a>
+
+      <a href="history.html">
+        History
+      </a>
+
+      <a
+        href="administration.html"
+        data-system-admin-only
+      >
+        Administration
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+  <!-- =====================================================
+       MAIN CONTENT
+  ====================================================== -->
+
+  <main class="main-content">
+
+    <!-- PAGE TOPBAR -->
+
+    <header class="topbar">
+
+      <div>
+        <span class="eyebrow">
+          DIVISION MANAGEMENT
+        </span>
+
+        <h1>
+          Divisions
+        </h1>
+      </div>
+
+    </header>
+
+
+    <section class="page-content">
+
+
+      <!-- =================================================
+           DIVISION HERO
+      ================================================== -->
+
+      <section class="ctr-hero">
+
+        <div>
+
+          <span class="hero-tag">
+            RAILWAY DIVISIONS
+          </span>
+
+          <h2>
+            Division & Station Records
+          </h2>
+
+          <p>
+            Select a division to view and manage its CTR stations.
+          </p>
+
+        </div>
+
+
+        <div data-system-admin-only>
+
+          <button
+            type="button"
+            id="showAddDivision"
+            class="primary-action"
+          >
+            + Add Division
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           ADD / EDIT DIVISION
+      ================================================== -->
+
+      <section
+        class="add-station-panel"
+        id="addDivisionPanel"
+        data-system-admin-only
+      >
+
+        <div class="add-station-header">
+
+          <div>
+
+            <span>
+              DIVISION DETAILS
+            </span>
+
+            <h3 id="divisionFormTitle">
+              Add Division
+            </h3>
+
+          </div>
+
+
+          <button
+            type="button"
+            id="closeAddDivision"
+            class="secondary-action"
+          >
+            Close
+          </button>
+
+        </div>
+
+
+        <div class="station-form-grid">
+
+
+          <div class="terminal-form-field">
+
+            <label for="divisionName">
+              Division Name
+            </label>
+
+            <input
+              type="text"
+              id="divisionName"
+              placeholder="Example: Jabalpur Division"
+              autocomplete="off"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="divisionCode">
+              Division Code
+            </label>
+
+            <input
+              type="text"
+              id="divisionCode"
+              placeholder="Example: JBP"
+              autocomplete="off"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="zoneName">
+              Railway Zone
+            </label>
+
+            <input
+              type="text"
+              id="zoneName"
+              placeholder="Example: West Central Railway"
+              autocomplete="off"
+            >
+
+          </div>
+
+
+          <div class="terminal-form-field">
+
+            <label for="displayOrder">
+              Display Order
+            </label>
+
+            <input
+              type="number"
+              id="displayOrder"
+              value="0"
+              min="0"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div class="add-station-actions">
+
+          <button
+            type="button"
+            id="cancelAddDivision"
+            class="secondary-action"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            id="saveDivision"
+            class="primary-action"
+          >
+            Save Division
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           SEARCH
+      ================================================== -->
+
+      <section class="station-search-bar">
+
+        <input
+          type="search"
+          id="divisionSearch"
+          placeholder="Search division name or code..."
+          autocomplete="off"
+        >
+
+        <span id="divisionCount">
+          0 Divisions
+        </span>
+
+      </section>
+
+
+      <!-- =================================================
+           DIVISION LIST
+      ================================================== -->
+
+      <section>
+
+        <div
+          id="divisionList"
+          class="station-list-grid"
+        >
+        </div>
+
+
+        <div
+          id="divisionsEmptyState"
+          class="stations-empty-state"
+        >
+
+          <strong>
+            No Divisions Found
+          </strong>
+
+          <p>
+            Add a railway division to begin station management.
+          </p>
+
+        </div>
+
+      </section>
+
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<!-- =====================================================
+     SCRIPTS
+===================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase-config.js"></script>
+
+<script src="js/auth-guard.js"></script>
+
+<script src="js/role-access.js"></script>
+
+<script src="js/railway-shell.js"></script>
+
+<script src="js/divisions.js"></script>
+
+</body>
+
+</html>
