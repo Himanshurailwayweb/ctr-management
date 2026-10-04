@@ -130,6 +130,9 @@ function createTerminal(number) {
     status:
       "SPARE",
 
+    conductorStyle:
+      "STRAIGHT",
+
     particular:
       "",
 
@@ -327,24 +330,123 @@ function renumberTerminals(row) {
             "0"
           );
 
+
+      terminal.conductorStyle =
+        terminal.conductorStyle ||
+        "STRAIGHT";
+
     }
   );
 
 }
 
 
-function relabelRows(rack) {
+function relabelRows(
+  owner
+) {
 
-  rack.rows.forEach(
+  if (
+    !owner ||
+    !Array.isArray(
+      owner.rows
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  const usedLabels =
+    new Set();
+
+
+  owner.rows.forEach(
     function (
-      row,
-      index
+      row
     ) {
 
-      row.label =
-        getRowLabel(
-          index
+      let currentLabel =
+        String(
+          row.label || ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      /*
+         Existing custom labels like:
+
+         AA
+         BB
+         A
+         B
+         C
+         D
+
+         are preserved exactly.
+      */
+
+      if (
+        currentLabel &&
+        !usedLabels.has(
+          currentLabel
+        )
+      ) {
+
+        row.label =
+          currentLabel;
+
+
+        usedLabels.add(
+          currentLabel
         );
+
+
+        return;
+
+      }
+
+
+      /*
+         Only blank / duplicate label gets
+         a new unused alphabetical label.
+      */
+
+      let labelIndex =
+        0;
+
+
+      let newLabel =
+        "";
+
+
+      do {
+
+        newLabel =
+          getRowLabel(
+            labelIndex
+          );
+
+
+        labelIndex++;
+
+      }
+
+      while (
+        usedLabels.has(
+          newLabel
+        )
+      );
+
+
+      row.label =
+        newLabel;
+
+
+      usedLabels.add(
+        newLabel
+      );
 
     }
   );
@@ -2573,7 +2675,9 @@ function renderStationCtrRacks() {
         rack.id;
 
 
-      /* HEADER */
+      /* ===============================================
+         RACK HEADER
+      =============================================== */
 
       const header =
         document.createElement(
@@ -2623,6 +2727,10 @@ function renderStationCtrRacks() {
         rack.name;
 
 
+      nameInput.placeholder =
+        "Enter CTR Rack name";
+
+
       nameInput.addEventListener(
         "input",
         function () {
@@ -2644,10 +2752,26 @@ function renderStationCtrRacks() {
         "ctr-lazy-summary";
 
 
-      summary.textContent =
-        `${rack.rows.length} Rows • ${getTerminalCount(
+      const rowCount =
+        Array.isArray(
+          rack.rows
+        )
+          ? rack.rows.length
+          : 0;
+
+
+      const terminalCount =
+        getTerminalCount(
           rack
-        )} Terminals • ${rack.fuseDetails.length} Fuse Points`;
+        );
+
+
+      summary.textContent =
+        `${rowCount} ${
+          rowCount === 1
+            ? "Row"
+            : "Rows"
+        } • ${terminalCount} Terminals`;
 
 
       titleArea.append(
@@ -2657,7 +2781,9 @@ function renderStationCtrRacks() {
       );
 
 
-      /* ACTIONS */
+      /* ===============================================
+         RACK ACTIONS
+      =============================================== */
 
       const actions =
         document.createElement(
@@ -2667,75 +2793,6 @@ function renderStationCtrRacks() {
 
       actions.className =
         "rack-header-actions";
-
-
-      const status =
-        document.createElement(
-          "div"
-        );
-
-
-      status.className =
-        "rack-status";
-
-
-      status.textContent =
-        currentStationWorkflowStatus ===
-        "DRAFT"
-
-          ? "Draft"
-
-          : "Initial Setup";
-
-
-      const toggle =
-        document.createElement(
-          "button"
-        );
-
-
-      toggle.type =
-        "button";
-
-
-      toggle.className =
-        "builder-action-btn ctr-view-toggle";
-
-
-      toggle.textContent =
-        isRackOpen(rack)
-          ? "Close Rack"
-          : "Open Rack";
-
-
-      toggle.addEventListener(
-        "click",
-        function () {
-
-          if (
-            isRackOpen(
-              rack
-            )
-          ) {
-
-            openedStationRacks.delete(
-              rack.id
-            );
-
-          }
-          else {
-
-            openedStationRacks.add(
-              rack.id
-            );
-
-          }
-
-
-          renderStationCtrRacks();
-
-        }
-      );
 
 
       const remove =
@@ -2770,6 +2827,20 @@ function renderStationCtrRacks() {
 
 
           if (
+            stationCtrRacks.length <=
+            1
+          ) {
+
+            alert(
+              "At least one CTR Rack must remain."
+            );
+
+            return;
+
+          }
+
+
+          if (
             !confirm(
               `Remove ${rack.name}?`
             )
@@ -2796,12 +2867,12 @@ function renderStationCtrRacks() {
             );
 
 
-            openedStationRacks.delete(
-              rack.id
-            );
-
-
             renderStationCtrRacks();
+
+
+            window
+              .CTR_STATION_SVG_VIEW
+              ?.refresh?.();
 
           }
 
@@ -2809,9 +2880,7 @@ function renderStationCtrRacks() {
       );
 
 
-      actions.append(
-        status,
-        toggle,
+      actions.appendChild(
         remove
       );
 
@@ -2825,172 +2894,6 @@ function renderStationCtrRacks() {
       card.appendChild(
         header
       );
-
-
-      /* DRAWING ONLY WHEN OPEN */
-
-      if (
-        isRackOpen(
-          rack
-        )
-      ) {
-
-        const drawing =
-          document.createElement(
-            "div"
-          );
-
-
-        drawing.className =
-          "rack-drawing";
-
-
-        drawing.appendChild(
-          buildFuseSection(
-            rack,
-            renderStationCtrRacks,
-            "rack-fuse-section",
-            "FIRST STAGE"
-          )
-        );
-
-
-        const toolbar =
-          document.createElement(
-            "div"
-          );
-
-
-        toolbar.className =
-          "rack-builder-toolbar";
-
-
-        const title =
-          document.createElement(
-            "div"
-          );
-
-
-        title.innerHTML = `
-
-          <span class="rack-sub-label">
-            CTR TERMINALS
-          </span>
-
-          <h4>
-            Row & Conductor Structure
-          </h4>
-
-        `;
-
-
-        const addRow =
-          document.createElement(
-            "button"
-          );
-
-
-        addRow.type =
-          "button";
-
-
-        addRow.className =
-          "builder-action-btn";
-
-
-        addRow.textContent =
-          "+ Add Row";
-
-
-        addRow.addEventListener(
-          "click",
-          function () {
-
-            if (
-              !requireCurrentStationDraftEdit()
-            ) {
-
-              return;
-
-            }
-
-
-            const columns =
-              rack.rows[0]
-                ?.terminals
-                ?.length ||
-              12;
-
-
-            const newRow =
-              createRow(
-                getRowLabel(
-                  rack.rows.length
-                ),
-                columns
-              );
-
-
-            rack.rows.push(
-              newRow
-            );
-
-
-            drawing.appendChild(
-              buildRowBlock(
-                rack,
-                newRow,
-                "station",
-                renderStationCtrRacks,
-                false
-              )
-            );
-
-
-            scheduleStationAccessApply();
-
-
-            window
-              .ctrGridControls
-              ?.refresh?.();
-
-          }
-        );
-
-
-        toolbar.append(
-          title,
-          addRow
-        );
-
-
-        drawing.appendChild(
-          toolbar
-        );
-
-
-        rack.rows.forEach(
-          function (row) {
-
-            drawing.appendChild(
-              buildRowBlock(
-                rack,
-                row,
-                "station",
-                renderStationCtrRacks,
-                false
-              )
-            );
-
-          }
-        );
-
-
-        card.appendChild(
-          drawing
-        );
-
-      }
 
 
       fragment.appendChild(
@@ -3226,9 +3129,9 @@ function createLocationRackView(
 
       location.rows.push(
         createRow(
-          getRowLabel(
-            location.rows.length
-          ),
+          getNextUnusedRowLabel(
+          location
+         ),
           columns
         )
       );
@@ -3527,9 +3430,9 @@ function renderConnectedEnds() {
         "connected-end-card";
 
 
-      /* ===================================================
-         END HEADER
-      =================================================== */
+      /* ===============================================
+         CONNECTED END HEADER
+      =============================================== */
 
       const header =
         document.createElement(
@@ -3575,6 +3478,10 @@ function renderConnectedEnds() {
         end.name;
 
 
+      endName.placeholder =
+        "Enter Connected End name";
+
+
       endName.addEventListener(
         "input",
         function () {
@@ -3596,8 +3503,20 @@ function renderConnectedEnds() {
         "ctr-lazy-summary";
 
 
+      const locationCount =
+        Array.isArray(
+          end.locations
+        )
+          ? end.locations.length
+          : 0;
+
+
       summary.textContent =
-        `${end.locations.length} Location Boxes`;
+        `${locationCount} ${
+          locationCount === 1
+            ? "Location Box"
+            : "Location Boxes"
+        }`;
 
 
       titleArea.append(
@@ -3607,6 +3526,10 @@ function renderConnectedEnds() {
       );
 
 
+      /* ===============================================
+         END ACTIONS
+      =============================================== */
+
       const actions =
         document.createElement(
           "div"
@@ -3615,56 +3538,6 @@ function renderConnectedEnds() {
 
       actions.className =
         "end-header-actions";
-
-
-      const toggleEnd =
-        document.createElement(
-          "button"
-        );
-
-
-      toggleEnd.type =
-        "button";
-
-
-      toggleEnd.className =
-        "builder-action-btn ctr-view-toggle";
-
-
-      toggleEnd.textContent =
-        isEndOpen(end)
-          ? "Close End"
-          : "Open End";
-
-
-      toggleEnd.addEventListener(
-        "click",
-        function () {
-
-          if (
-            isEndOpen(
-              end
-            )
-          ) {
-
-            openedConnectedEnds.delete(
-              end.id
-            );
-
-          }
-          else {
-
-            openedConnectedEnds.add(
-              end.id
-            );
-
-          }
-
-
-          renderConnectedEnds();
-
-        }
-      );
 
 
       const addLocation =
@@ -3698,6 +3571,14 @@ function renderConnectedEnds() {
           }
 
 
+          end.locations =
+            Array.isArray(
+              end.locations
+            )
+              ? end.locations
+              : [];
+
+
           const location =
             createLocation(
               end
@@ -3709,17 +3590,12 @@ function renderConnectedEnds() {
           );
 
 
-          openedConnectedEnds.add(
-            end.id
-          );
-
-
-          openedLocationBoxes.add(
-            location.id
-          );
-
-
           renderConnectedEnds();
+
+
+          window
+            .CTR_LOCATION_SVG_VIEW
+            ?.refresh?.();
 
         }
       );
@@ -3758,7 +3634,7 @@ function renderConnectedEnds() {
 
           if (
             !confirm(
-              `Remove ${end.name}?`
+              `Remove ${end.name} and all Location Boxes under it?`
             )
           ) {
 
@@ -3783,12 +3659,12 @@ function renderConnectedEnds() {
             );
 
 
-            openedConnectedEnds.delete(
-              end.id
-            );
-
-
             renderConnectedEnds();
+
+
+            window
+              .CTR_LOCATION_SVG_VIEW
+              ?.refresh?.();
 
           }
 
@@ -3797,7 +3673,6 @@ function renderConnectedEnds() {
 
 
       actions.append(
-        toggleEnd,
         addLocation,
         removeEnd
       );
@@ -3814,51 +3689,50 @@ function renderConnectedEnds() {
       );
 
 
-      /* ===================================================
-         LOCATIONS ONLY WHEN END OPEN
-      =================================================== */
+      /* ===============================================
+         LOCATION BOX LIST
+         Always visible - no Open Location button
+      =============================================== */
+
+      const locationGrid =
+        document.createElement(
+          "div"
+        );
+
+
+      locationGrid.className =
+        "dynamic-location-grid";
+
 
       if (
-        isEndOpen(
-          end
-        )
+        !Array.isArray(
+          end.locations
+        ) ||
+        end.locations.length ===
+        0
       ) {
 
-        const locationGrid =
+        const empty =
           document.createElement(
             "div"
           );
 
 
-        locationGrid.className =
-          "dynamic-location-grid";
+        empty.className =
+          "location-empty-state";
 
 
-        if (
-          end.locations.length ===
-          0
-        ) {
-
-          const empty =
-            document.createElement(
-              "div"
-            );
+        empty.textContent =
+          "No Location Boxes added yet.";
 
 
-          empty.className =
-            "location-empty-state";
+        locationGrid.appendChild(
+          empty
+        );
 
+      }
 
-          empty.textContent =
-            "No location boxes added yet.";
-
-
-          locationGrid.appendChild(
-            empty
-          );
-
-        }
-
+      else {
 
         end.locations.forEach(
           function (location) {
@@ -3921,6 +3795,10 @@ function renderConnectedEnds() {
               location.name;
 
 
+            locationName.placeholder =
+              "Enter Location Box name";
+
+
             locationName.addEventListener(
               "input",
               function () {
@@ -3942,10 +3820,26 @@ function renderConnectedEnds() {
               "ctr-lazy-summary";
 
 
-            locationSummary.textContent =
-              `${location.rows.length} Rows • ${getTerminalCount(
+            const rowCount =
+              Array.isArray(
+                location.rows
+              )
+                ? location.rows.length
+                : 0;
+
+
+            const terminalCount =
+              getTerminalCount(
                 location
-              )} Terminals • ${location.fuseDetails.length} Fuse Points`;
+              );
+
+
+            locationSummary.textContent =
+              `${rowCount} ${
+                rowCount === 1
+                  ? "Row"
+                  : "Rows"
+              } • ${terminalCount} Terminals`;
 
 
             locationTitle.append(
@@ -3963,60 +3857,6 @@ function renderConnectedEnds() {
 
             locationActions.className =
               "end-header-actions";
-
-
-            const toggleLocation =
-              document.createElement(
-                "button"
-              );
-
-
-            toggleLocation.type =
-              "button";
-
-
-            toggleLocation.className =
-              "builder-action-btn ctr-view-toggle";
-
-
-            toggleLocation.textContent =
-              isLocationOpen(
-                location
-              )
-
-                ? "Close Location"
-
-                : "Open Location";
-
-
-            toggleLocation.addEventListener(
-              "click",
-              function () {
-
-                if (
-                  isLocationOpen(
-                    location
-                  )
-                ) {
-
-                  openedLocationBoxes.delete(
-                    location.id
-                  );
-
-                }
-                else {
-
-                  openedLocationBoxes.add(
-                    location.id
-                  );
-
-                }
-
-
-                renderConnectedEnds();
-
-              }
-            );
 
 
             const removeLocation =
@@ -4077,12 +3917,12 @@ function renderConnectedEnds() {
                   );
 
 
-                  openedLocationBoxes.delete(
-                    location.id
-                  );
-
-
                   renderConnectedEnds();
+
+
+                  window
+                    .CTR_LOCATION_SVG_VIEW
+                    ?.refresh?.();
 
                 }
 
@@ -4090,8 +3930,7 @@ function renderConnectedEnds() {
             );
 
 
-            locationActions.append(
-              toggleLocation,
+            locationActions.appendChild(
               removeLocation
             );
 
@@ -4107,26 +3946,6 @@ function renderConnectedEnds() {
             );
 
 
-            /*
-               Heavy terminal drawing only exists when
-               Location Box is opened.
-            */
-
-            if (
-              isLocationOpen(
-                location
-              )
-            ) {
-
-              locationCard.appendChild(
-                createLocationRackView(
-                  location
-                )
-              );
-
-            }
-
-
             locationGrid.appendChild(
               locationCard
             );
@@ -4134,12 +3953,12 @@ function renderConnectedEnds() {
           }
         );
 
-
-        card.appendChild(
-          locationGrid
-        );
-
       }
+
+
+      card.appendChild(
+        locationGrid
+      );
 
 
       fragment.appendChild(
@@ -4309,53 +4128,57 @@ function normalizeRack(
 
 
       row.terminals.forEach(
-        function (
-          terminal,
-          terminalIndex
-        ) {
+  function (
+    terminal,
+    terminalIndex
+  ) {
 
-          terminal.id =
-            terminal.id ||
-            createId();
-
-
-          terminal.number =
-            String(
-              terminalIndex +
-              1
-            )
-              .padStart(
-                2,
-                "0"
-              );
+    terminal.id =
+      terminal.id ||
+      createId();
 
 
-          terminal.status =
-            terminal.status ||
-            "SPARE";
+    terminal.number =
+      String(
+        terminalIndex + 1
+      )
+        .padStart(
+          2,
+          "0"
+        );
 
 
-          terminal.particular =
-            terminal.particular ||
-            "";
+    terminal.status =
+      terminal.status ||
+      "SPARE";
 
 
-          terminal.locationBox =
-            terminal.locationBox ||
-            "";
+    terminal.conductorStyle =
+      terminal.conductorStyle ||
+      "STRAIGHT";
 
 
-          terminal.locationTerminal =
-            terminal.locationTerminal ||
-            "";
+    terminal.particular =
+      terminal.particular ||
+      "";
 
 
-          terminal.remarks =
-            terminal.remarks ||
-            "";
+    terminal.locationBox =
+      terminal.locationBox ||
+      "";
 
-        }
-      );
+
+    terminal.locationTerminal =
+      terminal.locationTerminal ||
+      "";
+
+
+    terminal.remarks =
+      terminal.remarks ||
+      "";
+
+    }
+  );
 
     }
   );

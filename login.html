@@ -3,155 +3,1288 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>CTR System Login</title>
 
-  <link rel="stylesheet" href="css/ctr.css">
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
 
   <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #eef3f8;
+      min-height: 100%;
     }
 
-    .login-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
 
-    .login-box {
-      width: 100%;
-      max-width: 420px;
-      background: white;
-      border: 1px solid #d9e2ec;
-      border-radius: 10px;
-      padding: 30px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
-    }
+    body {
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 
-    .login-box h1 {
-      margin-top: 0;
-      color: #0c2d53;
-      font-size: 24px;
-    }
+      background: #eef3f7;
 
-    .login-box p {
-      color: #66788a;
-      font-size: 13px;
-      margin-bottom: 25px;
-    }
-
-    .login-field {
-      margin-bottom: 16px;
-    }
-
-    .login-field label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 12px;
-      font-weight: bold;
       color: #17395d;
     }
 
-    .login-field input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 11px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 14px;
+
+    /* =====================================================
+       PAGE
+    ===================================================== */
+
+    .login-page {
+      min-height: 100vh;
+
+      display: grid;
+
+      grid-template-columns:
+        minmax(520px, 1.08fr)
+        minmax(420px, 0.92fr);
     }
 
-    .login-button {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 6px;
-      background: #0c2d53;
-      color: white;
+
+    /* =====================================================
+       LEFT PANEL
+    ===================================================== */
+
+    .login-visual {
+      position: relative;
+
+      min-height: 100vh;
+
+      overflow: hidden;
+
+      padding:
+        42px
+        clamp(40px, 6vw, 78px);
+
+      background:
+        linear-gradient(
+          145deg,
+          #071f38 0%,
+          #0a3156 58%,
+          #0c3c66 100%
+        );
+
+      color: #ffffff;
+    }
+
+
+    .login-visual::before {
+      content: "";
+
+      position: absolute;
+
+      inset: 0;
+
+      opacity: 0.055;
+
+      background-image:
+        linear-gradient(
+          rgba(255,255,255,0.6) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          90deg,
+          rgba(255,255,255,0.6) 1px,
+          transparent 1px
+        );
+
+      background-size:
+        38px 38px;
+
+      pointer-events: none;
+    }
+
+
+    .visual-inner {
+      position: relative;
+
+      z-index: 2;
+
+      min-height:
+        calc(100vh - 84px);
+
+      display: flex;
+
+      flex-direction: column;
+    }
+
+
+    /* =====================================================
+       BRAND
+    ===================================================== */
+
+    .brand {
+      display: flex;
+
+      align-items: center;
+
+      gap: 13px;
+    }
+
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+
+      display: grid;
+
+      place-items: center;
+
+      border:
+        1px solid
+        rgba(255,255,255,0.40);
+
+      background:
+        rgba(255,255,255,0.045);
+
+      font-size: 16px;
+
+      font-weight: 800;
+
+      letter-spacing: 1px;
+    }
+
+
+    .brand strong {
+      display: block;
+
+      margin-bottom: 4px;
+
+      font-size: 16px;
+
+      letter-spacing: 0.5px;
+    }
+
+
+    .brand span {
+      display: block;
+
+      color:
+        rgba(255,255,255,0.58);
+
+      font-size: 10px;
+
+      font-weight: 700;
+
+      letter-spacing: 1.5px;
+
+      text-transform: uppercase;
+    }
+
+
+    /* =====================================================
+       LEFT MAIN TEXT
+    ===================================================== */
+
+    .visual-copy {
+      max-width: 590px;
+
+      margin-top:
+        clamp(85px, 14vh, 150px);
+    }
+
+
+    .visual-label {
+      display: block;
+
+      margin-bottom: 14px;
+
+      color: #a5cbe8;
+
+      font-size: 10px;
+
+      font-weight: 800;
+
+      letter-spacing: 2.1px;
+
+      text-transform: uppercase;
+    }
+
+
+    .visual-copy h1 {
+      margin:
+        0 0
+        20px;
+
+      max-width: 560px;
+
+      font-size:
+        clamp(
+          38px,
+          5vw,
+          58px
+        );
+
+      line-height: 1.02;
+
+      letter-spacing: -1.5px;
+    }
+
+
+    .visual-copy p {
+      max-width: 530px;
+
+      margin: 0;
+
+      color:
+        rgba(255,255,255,0.67);
+
       font-size: 14px;
+
+      line-height: 1.8;
+    }
+
+
+    /* =====================================================
+       SIGNAL GRAPHIC
+    ===================================================== */
+
+    .signal-art {
+      position: relative;
+
+      margin-top: auto;
+
+      padding-top: 55px;
+    }
+
+
+    .signal-line {
+      position: relative;
+
+      height: 74px;
+    }
+
+
+    /* -----------------------------------------------------
+       MAIN TRACK
+    ----------------------------------------------------- */
+
+    .track {
+      position: absolute;
+
+      left: 0;
+      right: 0;
+
+      bottom: 17px;
+
+      height: 2px;
+
+      background:
+        rgba(191,215,232,0.34);
+
+      overflow: visible;
+    }
+
+
+    /*
+      Green route starts from absolute left
+      and progressively reaches 100%.
+    */
+
+    .track::after {
+      content: "";
+
+      position: absolute;
+
+      left: 0;
+      top: -1px;
+
+      width: 0%;
+      height: 4px;
+
+      background: #38bd76;
+
+      box-shadow:
+        0 0 8px
+        rgba(56,189,118,0.38);
+
+      animation:
+        routeGlow
+        5s ease-in-out
+        infinite;
+    }
+
+
+    @keyframes routeGlow {
+
+      0% {
+        width: 0%;
+        opacity: 0;
+      }
+
+      7% {
+        width: 0%;
+        opacity: 1;
+      }
+
+      78% {
+        width: 100%;
+        opacity: 1;
+      }
+
+      90% {
+        width: 100%;
+        opacity: 1;
+      }
+
+      100% {
+        width: 100%;
+        opacity: 0;
+      }
+
+    }
+
+
+    /* -----------------------------------------------------
+       SIGNAL
+    ----------------------------------------------------- */
+
+    .signal {
+      position: absolute;
+
+      right: 18%;
+
+      bottom: 17px;
+
+      width: 4px;
+      height: 48px;
+
+      background: #9bb0c1;
+    }
+
+
+    .signal-head {
+      position: absolute;
+
+      width: 25px;
+      height: 39px;
+
+      left: -11px;
+      top: -37px;
+
+      border-radius: 4px;
+
+      background: #10283c;
+
+      border:
+        1px solid
+        rgba(255,255,255,0.16);
+    }
+
+
+    .signal-red,
+    .signal-green {
+      position: absolute;
+
+      left: 7px;
+
+      width: 9px;
+      height: 9px;
+
+      border-radius: 50%;
+    }
+
+
+    .signal-red {
+      top: 7px;
+
+      background: #e65050;
+
+      box-shadow:
+        0 0 7px
+        rgba(230,80,80,0.38);
+
+      animation:
+        redAspect
+        5s linear
+        infinite;
+    }
+
+
+    .signal-green {
+      bottom: 7px;
+
+      background: #29c96f;
+
+      box-shadow:
+        0 0 9px
+        rgba(41,201,111,0.6);
+
+      animation:
+        greenAspect
+        5s linear
+        infinite;
+    }
+
+
+    @keyframes redAspect {
+
+      0%,
+      23% {
+        opacity: 1;
+      }
+
+      32%,
+      90% {
+        opacity: 0.15;
+      }
+
+      100% {
+        opacity: 1;
+      }
+
+    }
+
+
+    @keyframes greenAspect {
+
+      0%,
+      23% {
+        opacity: 0.12;
+      }
+
+      32%,
+      90% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.12;
+      }
+
+    }
+
+
+    /* =====================================================
+       LEFT FOOTER
+    ===================================================== */
+
+    .visual-footer {
+      display: flex;
+
+      justify-content: space-between;
+
+      gap: 16px;
+
+      margin-top: 18px;
+
+      color:
+        rgba(255,255,255,0.43);
+
+      font-size: 9px;
+
+      font-weight: 700;
+
+      letter-spacing: 0.9px;
+
+      text-transform: uppercase;
+    }
+
+
+    /* =====================================================
+       RIGHT LOGIN PANEL
+    ===================================================== */
+
+    .login-side {
+      min-height: 100vh;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      padding:
+        42px
+        clamp(28px, 5vw, 70px);
+
+      background:
+        linear-gradient(
+          180deg,
+          #fafcfd,
+          #edf3f7
+        );
+    }
+
+
+    .login-shell {
+      width: 100%;
+
+      max-width: 420px;
+    }
+
+
+    .login-heading {
+      margin-bottom: 26px;
+    }
+
+
+    .login-heading small {
+      display: block;
+
+      margin-bottom: 8px;
+
+      color: #617b93;
+
+      font-size: 9px;
+
+      font-weight: 800;
+
+      letter-spacing: 1.8px;
+
+      text-transform: uppercase;
+    }
+
+
+    .login-heading h2 {
+      margin:
+        0 0
+        9px;
+
+      color: #0b3159;
+
+      font-size: 29px;
+
+      letter-spacing: -0.4px;
+    }
+
+
+    .login-heading p {
+      margin: 0;
+
+      color: #728596;
+
+      font-size: 12px;
+
+      line-height: 1.6;
+    }
+
+
+    .login-card {
+      padding: 28px;
+
+      border:
+        1px solid
+        #d2dde7;
+
+      background: #ffffff;
+
+      box-shadow:
+        0 14px 36px
+        rgba(12,48,80,0.07);
+    }
+
+
+    /* =====================================================
+       LOGIN FORM
+    ===================================================== */
+
+    .login-field {
+      margin-bottom: 17px;
+    }
+
+
+    .login-field label {
+      display: block;
+
+      margin-bottom: 7px;
+
+      color: #173c60;
+
+      font-size: 11px;
+
+      font-weight: 800;
+    }
+
+
+    .login-field input {
+      width: 100%;
+
+      height: 46px;
+
+      padding:
+        0 13px;
+
+      border:
+        1px solid
+        #c7d4df;
+
+      border-radius: 5px;
+
+      outline: none;
+
+      background: #ffffff;
+
+      color: #172b3d;
+
+      font-size: 14px;
+
+      transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
+    }
+
+
+    .login-field input:focus {
+      border-color: #1f6197;
+
+      box-shadow:
+        0 0 0 3px
+        rgba(31,97,151,0.09);
+    }
+
+
+    /* =====================================================
+       PASSWORD FIELD
+    ===================================================== */
+
+    .password-wrap {
+      position: relative;
+    }
+
+
+    .password-wrap input {
+      padding-right: 49px;
+    }
+
+
+    .password-toggle {
+      position: absolute;
+
+      top: 50%;
+      right: 7px;
+
+      transform:
+        translateY(-50%);
+
+      width: 36px;
+      height: 32px;
+
+      display: grid;
+
+      place-items: center;
+
+      padding: 0;
+
+      border: 0;
+
+      border-radius: 4px;
+
+      background: transparent;
+
+      color: #516b82;
+
       cursor: pointer;
     }
 
-    .login-button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+
+    .password-toggle:hover {
+      background: #edf3f7;
     }
 
-    #loginMessage {
-      min-height: 20px;
-      margin-bottom: 10px;
-      font-size: 12px;
+
+    /* =====================================================
+       FORGOT PASSWORD
+    ===================================================== */
+
+    .forgot-row {
+      display: flex;
+
+      justify-content: flex-end;
+
+      margin:
+        -3px 0
+        15px;
     }
+
+
+    .forgot-password {
+      padding: 3px 0;
+
+      border: 0;
+
+      background: transparent;
+
+      color: #12598f;
+
+      font-size: 11px;
+
+      font-weight: 800;
+
+      cursor: pointer;
+    }
+
+
+    .forgot-password:hover {
+      text-decoration: underline;
+    }
+
+
+    /* =====================================================
+       LOGIN MESSAGE
+    ===================================================== */
+
+    #loginMessage {
+      min-height: 22px;
+
+      margin-bottom: 8px;
+
+      font-size: 11px;
+
+      line-height: 1.5;
+    }
+
+
+    /* =====================================================
+       LOGIN BUTTON
+    ===================================================== */
+
+    .login-button {
+      width: 100%;
+
+      height: 46px;
+
+      border: 0;
+
+      border-radius: 5px;
+
+      background: #0b3763;
+
+      color: #ffffff;
+
+      font-size: 13px;
+
+      font-weight: 800;
+
+      letter-spacing: 0.25px;
+
+      cursor: pointer;
+
+      transition:
+        background 0.18s ease;
+    }
+
+
+    .login-button:hover {
+      background: #082c51;
+    }
+
+
+    .login-button:disabled {
+      opacity: 0.65;
+
+      cursor: wait;
+    }
+
+
+    /* =====================================================
+       ACCESS NOTE
+    ===================================================== */
+
+    .access-note {
+      display: grid;
+
+      grid-template-columns:
+        25px 1fr;
+
+      gap: 9px;
+
+      margin-top: 17px;
+
+      padding:
+        12px 13px;
+
+      border-left:
+        3px solid
+        #347cb3;
+
+      background: #f2f6f9;
+    }
+
+
+    .access-note-mark {
+      color: #17679f;
+
+      font-weight: 800;
+    }
+
+
+    .access-note p {
+      margin: 0;
+
+      color: #607589;
+
+      font-size: 10px;
+
+      line-height: 1.55;
+    }
+
+
+    /* =====================================================
+       LOGIN FOOTER
+    ===================================================== */
+
+    .login-footer {
+      margin-top: 20px;
+
+      color: #8392a0;
+
+      font-size: 9px;
+
+      line-height: 1.6;
+
+      text-align: center;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 980px) {
+
+      .login-page {
+        grid-template-columns: 1fr;
+      }
+
+
+      .login-visual {
+        min-height: 430px;
+
+        padding:
+          30px 25px;
+      }
+
+
+      .visual-inner {
+        min-height: 370px;
+      }
+
+
+      .visual-copy {
+        margin-top: 55px;
+      }
+
+
+      .login-side {
+        min-height: auto;
+
+        padding:
+          45px 20px
+          55px;
+      }
+
+    }
+
+
+    @media (max-width: 550px) {
+
+      .login-visual {
+        min-height: 350px;
+      }
+
+
+      .visual-inner {
+        min-height: 290px;
+      }
+
+
+      .visual-copy {
+        margin-top: 42px;
+      }
+
+
+      .visual-copy h1 {
+        font-size: 32px;
+      }
+
+
+      .visual-copy p {
+        font-size: 12px;
+      }
+
+
+      .signal-art {
+        padding-top: 25px;
+      }
+
+
+      .visual-footer {
+        flex-direction: column;
+
+        gap: 5px;
+      }
+
+    }
+
+
+    /* =====================================================
+       REDUCED MOTION
+    ===================================================== */
+
+    @media (
+      prefers-reduced-motion:
+      reduce
+    ) {
+
+      .track::after,
+      .signal-red,
+      .signal-green {
+        animation: none;
+      }
+
+
+      .track::after {
+        width: 100%;
+
+        opacity: 1;
+      }
+
+
+      .signal-red {
+        opacity: 0.15;
+      }
+
+
+      .signal-green {
+        opacity: 1;
+      }
+
+    }
+
   </style>
+
 </head>
+
 
 <body>
 
-  <div class="login-page">
 
-    <div class="login-box">
+  <main class="login-page">
 
-      <h1>CTR Management System</h1>
 
-      <p>
-        Sign in using your authorized account.
-      </p>
+    <!-- ===================================================
+         LEFT VISUAL PANEL
+    ==================================================== -->
 
-      <form id="loginForm">
+    <section class="login-visual">
 
-        <div class="login-field">
-          <label for="loginEmail">Email</label>
 
-          <input
-            type="email"
-            id="loginEmail"
-            placeholder="Enter email"
-            required
-          >
+      <div class="visual-inner">
+
+
+        <div class="brand">
+
+
+          <div class="brand-mark">
+            CTR
+          </div>
+
+
+          <div>
+
+            <strong>
+              CTR Management System
+            </strong>
+
+            <span>
+              West Central Railway
+            </span>
+
+          </div>
+
+
         </div>
 
 
-        <div class="login-field">
-          <label for="loginPassword">Password</label>
 
-          <input
-            type="password"
-            id="loginPassword"
-            placeholder="Enter password"
-            required
-          >
+        <div class="visual-copy">
+
+
+          <span class="visual-label">
+            Signalling & Telecom Engineering
+          </span>
+
+
+          <h1>
+            CTR Management System
+          </h1>
+
+
+          <p>
+            Secure  records for station CTR
+            preparation, review, approval, digital signing
+            and permanent document history.
+          </p>
+
+
         </div>
 
 
-        <div id="loginMessage"></div>
+
+        <!-- =================================================
+             MINIMAL SIGNAL ANIMATION
+        ================================================== -->
+
+        <div class="signal-art">
 
 
-        <button
-          type="submit"
-          id="loginButton"
-          class="login-button"
-        >
-          Sign In
-        </button>
-
-      </form>
-
-    </div>
-
-  </div>
+          <div class="signal-line">
 
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+            <div class="track"></div>
+
+
+            <div class="signal">
+
+
+              <div class="signal-head">
+
+                <span class="signal-red"></span>
+
+                <span class="signal-green"></span>
+
+              </div>
+
+
+            </div>
+
+
+          </div>
+
+
+
+          <div class="visual-footer">
+
+            <span>
+              Controlled Access
+            </span>
+
+            <span>
+              S&T Workflow
+            </span>
+
+            <span>
+              Digital Record Integrity
+            </span>
+
+          </div>
+
+
+        </div>
+
+
+      </div>
+
+
+    </section>
+
+
+
+    <!-- ===================================================
+         RIGHT LOGIN
+    ==================================================== -->
+
+    <section class="login-side">
+
+
+      <div class="login-shell">
+
+
+        <div class="login-heading">
+
+
+          <small>
+            Authorized Access
+          </small>
+
+
+          <h2>
+            Sign in to CTR
+          </h2>
+
+
+          <p>
+            Use your registered railway account credentials.
+          </p>
+
+
+        </div>
+
+
+
+        <div class="login-card">
+
+
+          <form
+            id="loginForm"
+            novalidate
+          >
+
+
+            <div class="login-field">
+
+
+              <label for="loginEmail">
+                Email Address
+              </label>
+
+
+              <input
+                type="email"
+                id="loginEmail"
+                placeholder="Enter registered email"
+                autocomplete="username"
+                required
+              >
+
+
+            </div>
+
+
+
+            <div class="login-field">
+
+
+              <label for="loginPassword">
+                Password
+              </label>
+
+
+              <div class="password-wrap">
+
+
+                <input
+                  type="password"
+                  id="loginPassword"
+                  placeholder="Enter password"
+                  autocomplete="current-password"
+                  required
+                >
+
+
+                <button
+                  type="button"
+                  id="togglePassword"
+                  class="password-toggle"
+                  aria-label="Show password"
+                  title="Show password"
+                >
+                  👁
+                </button>
+
+
+              </div>
+
+
+            </div>
+
+
+
+            <div class="forgot-row">
+
+
+              <button
+                type="button"
+                id="forgotPasswordButton"
+                class="forgot-password"
+              >
+                Forgot password?
+              </button>
+
+
+            </div>
+
+
+
+            <div
+              id="loginMessage"
+              aria-live="polite"
+            ></div>
+
+
+
+            <button
+              type="submit"
+              id="loginButton"
+              class="login-button"
+            >
+              Sign In
+            </button>
+
+
+          </form>
+
+
+
+          <div class="access-note">
+
+
+            <span class="access-note-mark">
+              ✓
+            </span>
+
+
+            <p>
+              Access is restricted to authorized CTR
+              Management System users.
+            </p>
+
+
+          </div>
+
+
+        </div>
+
+
+
+        <div class="login-footer">
+
+          CTR Management System · Signalling Engineering
+
+          <br>
+
+          Secure CTR record ACCESS
+
+        </div>
+
+
+      </div>
+
+
+    </section>
+
+
+  </main>
+
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
 
   <script src="js/supabase-config.js"></script>
 
+
   <script src="js/login.js"></script>
+
 
 </body>
 

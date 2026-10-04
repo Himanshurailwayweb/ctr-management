@@ -3054,3 +3054,383 @@
   );
 
 })();
+/* =========================================================
+   CTR HEADER LOGOUT
+========================================================= */
+
+(function () {
+
+  "use strict";
+
+
+  function getLogoutSupabaseClient() {
+
+    try {
+
+      if (
+        typeof supabaseClient !== "undefined"
+      ) {
+
+        return supabaseClient;
+
+      }
+
+    }
+    catch (error) {
+
+      console.error(
+        "Supabase client lookup error:",
+        error
+      );
+
+    }
+
+
+    return null;
+
+  }
+
+
+  function injectLogoutStyles() {
+
+    if (
+      document.getElementById(
+        "ctrLogoutStyles"
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
+
+    style.id =
+      "ctrLogoutStyles";
+
+
+    style.textContent = `
+
+      #ctrRailwayHeader
+      .ctr-header-user {
+
+        box-sizing:
+          border-box !important;
+
+        padding-right:
+          64px !important;
+
+      }
+
+
+      #ctrLogoutButton {
+
+        position:
+          absolute;
+
+        top:
+          50%;
+
+        right:
+          4px;
+
+        transform:
+          translateY(-50%);
+
+        height:
+          30px;
+
+        padding:
+          0 9px;
+
+        border:
+          1px solid #c6d0da;
+
+        border-radius:
+          3px;
+
+        background:
+          #ffffff;
+
+        color:
+          #29445f;
+
+        font-size:
+          10px;
+
+        font-weight:
+          700;
+
+        cursor:
+          pointer;
+
+      }
+
+
+      #ctrLogoutButton:hover {
+
+        background:
+          #f4f6f8;
+
+        border-color:
+          #8fa1b2;
+
+        color:
+          #173e6e;
+
+      }
+
+
+      #ctrLogoutButton:disabled {
+
+        opacity:
+          0.6;
+
+        cursor:
+          wait;
+
+      }
+
+
+      @media
+      (max-width: 760px) {
+
+        #ctrRailwayHeader
+        .ctr-header-user {
+
+          flex:
+            0 0 88px !important;
+
+          width:
+            88px !important;
+
+          padding:
+            2px 43px 2px 3px !important;
+
+        }
+
+
+        #ctrLogoutButton {
+
+          right:
+            3px;
+
+          width:
+            36px;
+
+          padding:
+            0;
+
+          font-size:
+            0;
+
+        }
+
+
+        #ctrLogoutButton::after {
+
+          content:
+            "↪";
+
+          font-size:
+            17px;
+
+        }
+
+      }
+
+    `;
+
+
+    document.head.appendChild(
+      style
+    );
+
+  }
+
+
+  function createLogoutButton() {
+
+    const userArea =
+      document.querySelector(
+        "#ctrRailwayHeader .ctr-header-user"
+      );
+
+
+    if (!userArea) {
+
+      return;
+
+    }
+
+
+    if (
+      document.getElementById(
+        "ctrLogoutButton"
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    const button =
+      document.createElement(
+        "button"
+      );
+
+
+    button.id =
+      "ctrLogoutButton";
+
+
+    button.type =
+      "button";
+
+
+    button.textContent =
+      "Logout";
+
+
+    button.title =
+      "Logout";
+
+
+    button.setAttribute(
+      "aria-label",
+      "Logout from CTR Management System"
+    );
+
+
+    button.addEventListener(
+      "click",
+      async function () {
+
+        const client =
+          getLogoutSupabaseClient();
+
+
+        if (!client) {
+
+          alert(
+            "Logout service is not ready. Please refresh the page and try again."
+          );
+
+          return;
+
+        }
+
+
+        const oldText =
+          button.textContent;
+
+
+        button.disabled =
+          true;
+
+
+        button.textContent =
+          "Wait...";
+
+
+        try {
+
+          const {
+            error
+          } =
+            await client.auth.signOut({
+              scope: "local"
+            });
+
+
+          if (error) {
+
+            throw error;
+
+          }
+
+
+          window.location.replace(
+            "login.html"
+          );
+
+        }
+        catch (error) {
+
+          console.error(
+            "Logout error:",
+            error
+          );
+
+
+          button.disabled =
+            false;
+
+
+          button.textContent =
+            oldText;
+
+
+          alert(
+            "Logout failed. Please try again."
+          );
+
+        }
+
+      }
+
+    );
+
+
+    userArea.appendChild(
+      button
+    );
+
+  }
+
+
+  function initializeLogout() {
+
+    injectLogoutStyles();
+
+    createLogoutButton();
+
+  }
+
+
+  window.addEventListener(
+    "ctr-access-ready",
+    initializeLogout
+  );
+
+
+  window.addEventListener(
+    "pageshow",
+    initializeLogout
+  );
+
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      initializeLogout
+    );
+
+  }
+  else {
+
+    initializeLogout();
+
+  }
+
+})();
