@@ -1,446 +1,567 @@
+/* =========================================================
+   CTR MANAGEMENT SYSTEM
+   CTR PDF GENERATOR
+
+   VERSION 1.0.0
+
+   PURPOSE
+   ---------------------------------------------------------
+   - Generate one controlled engineering PDF.
+   - All Station CTR racks included.
+   - All Location Box drawings included.
+   - Uses the SAME live SVG drawing already visible.
+   - Does not duplicate drawing logic.
+   - A3 Landscape engineering pages.
+   - Draft / Version / Date metadata.
+   - Exposes generated PDF Blob for later workflow upload.
+
+========================================================= */
+
 (function () {
+
   "use strict";
 
-  const STORAGE_BUCKET =
-    "ctr-workflow-documents";
 
-  const JSPDF_URL =
-    "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js";
+  const VERSION =
+    "1.0.0";
 
-  const MAX_FILE_SIZE =
-    25 * 1024 * 1024;
 
-  /*
-    Website ki standard drawing me 12 terminals
-    ek strip me naturally fit hote hain.
+  const PAGE_FORMAT =
+    "a3";
 
-    Agar future me 12 se zyada columns hue,
-    PDF automatically continuation strip banayega.
-  */
-  const MAX_TERMINALS_PER_STRIP =
-    12;
 
-  let generatorBusy =
+  const PAGE_ORIENTATION =
+    "landscape";
+
+
+  const PAGE_MARGIN =
+    10;
+
+
+  const HEADER_HEIGHT =
+    17;
+
+
+  const FOOTER_HEIGHT =
+    10;
+
+
+  const SVG_CAPTURE_DELAY =
+    180;
+
+
+  let pdfBusy =
     false;
 
 
-  /* =========================================================
+  let lastGeneratedPdf =
+    null;
+
+
+  let lastGeneratedFileName =
+    "";
+
+
+  let lastGeneratedPageCount =
+    0;
+
+
+  /* =====================================================
      BASIC HELPERS
-  ========================================================= */
+  ===================================================== */
 
-  function safeArray(value) {
-
-    return Array.isArray(value)
-      ? value
-      : [];
-
-  }
-
-
-  function cleanText(value) {
-
-    return String(
-      value ?? ""
-    ).trim();
-
-  }
-
-
-  function displayText(
-    value,
-    fallback = "-"
+  function delay(
+    milliseconds
   ) {
 
-    const result =
-      cleanText(value);
+    return new Promise(
+      function (resolve) {
 
-    return result || fallback;
+        window.setTimeout(
+          resolve,
+          milliseconds
+        );
+
+      }
+    );
 
   }
 
 
-  function firstValue(
-    ...values
+  async function waitFrames(
+    count = 2
   ) {
 
     for (
-      const value
-      of values
+      let index = 0;
+      index < count;
+      index++
     ) {
 
-      const result =
-        cleanText(value);
+      await new Promise(
+        function (resolve) {
 
-      if (result) {
-        return result;
-      }
+          window.requestAnimationFrame(
+            resolve
+          );
+
+        }
+      );
 
     }
-
-    return "";
 
   }
 
 
-  function formatDateTime(value) {
+  function cleanText(
+    value,
+    fallback = ""
+  ) {
+
+    const text =
+      String(
+        value ?? ""
+      )
+        .replace(
+          /\s+/g,
+          " "
+        )
+        .trim();
+
+
+    return text ||
+      fallback;
+
+  }
+
+
+  function safeFileName(
+    value
+  ) {
+
+    return cleanText(
+      value,
+      "STATION"
+    )
+      .replace(
+        /[^a-zA-Z0-9_-]+/g,
+        "_"
+      )
+      .replace(
+        /_+/g,
+        "_"
+      )
+      .replace(
+        /^_+|_+$/g,
+        ""
+      );
+
+  }
+
+
+  function formatDateTime(
+    value = new Date()
+  ) {
 
     const date =
-      value
-        ? new Date(value)
-        : new Date();
+      value instanceof Date
+        ? value
+        : new Date(value);
 
-    if (
-      Number.isNaN(
-        date.getTime()
+
+    return date.toLocaleString(
+      "en-IN",
+      {
+
+        day:
+          "2-digit",
+
+        month:
+          "short",
+
+        year:
+          "numeric",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit"
+
+      }
+    );
+
+  }
+
+
+  /* =====================================================
+     PAGE INFORMATION
+  ===================================================== */
+
+  function getStationName() {
+
+    return (
+
+      cleanText(
+        document
+          .querySelector(
+            ".station-hero h2"
+          )
+          ?.textContent
       )
-    ) {
 
-      return "-";
+      ||
 
-    }
+      cleanText(
+        document
+          .querySelector(
+            ".topbar h1"
+          )
+          ?.textContent
+          ?.replace(
+            /\s+CTR$/i,
+            ""
+          )
+      )
 
-    return date.toLocaleString();
+      ||
 
-  }
+      "STATION"
 
-
-  function getWorkflowId() {
-
-    return new URLSearchParams(
-      window.location.search
-    ).get(
-      "workflow"
     );
 
   }
 
 
-  /* =========================================================
-     SUPABASE CLIENT
-  ========================================================= */
+  function getSummaryValue(
+    labelText
+  ) {
 
-  function getSupabaseClient() {
+    const cards =
+      Array.from(
+        document.querySelectorAll(
+          ".station-summary-grid .summary-card"
+        )
+      );
 
-    if (
-      typeof supabaseClient !==
-        "undefined" &&
-      supabaseClient
-    ) {
 
-      return supabaseClient;
+    const target =
+      cards.find(
+        function (card) {
+
+          const label =
+            cleanText(
+              card
+                .querySelector(
+                  "span"
+                )
+                ?.textContent
+            )
+              .toLowerCase();
+
+
+          return (
+            label ===
+            labelText
+              .toLowerCase()
+          );
+
+        }
+      );
+
+
+    if (!target) {
+
+      return "";
 
     }
 
 
-    if (
-      window.supabaseClient
-    ) {
-
-      return window.supabaseClient;
-
-    }
-
-
-    if (
-      window.ctrSupabaseClient
-    ) {
-
-      return window.ctrSupabaseClient;
-
-    }
-
-
-    throw new Error(
-      "Supabase client is not available."
+    return cleanText(
+      target
+        .querySelector(
+          "strong"
+        )
+        ?.textContent
     );
 
   }
 
 
-  /* =========================================================
-     GENERATOR STATUS
-  ========================================================= */
+  function getDocumentVersion() {
 
-  function getStatusElement() {
+    return (
+      getSummaryValue(
+        "Current Version"
+      ) ||
+      "V0"
+    );
 
-    let element =
+  }
+
+
+  function getCtrStatus() {
+
+    return (
+      getSummaryValue(
+        "CTR Status"
+      ) ||
+      "DRAFT"
+    );
+
+  }
+
+
+  /* =====================================================
+     PDF STATUS
+  ===================================================== */
+
+  function ensurePdfStatus() {
+
+    let status =
       document.getElementById(
-        "ctrPdfGeneratorStatus"
+        "ctrPdfStatus"
       );
 
 
-    if (element) {
+    if (status) {
 
-      return element;
+      return status;
 
     }
 
 
-    const host =
-
-      document.getElementById(
-        "currentDocumentActions"
-      ) ||
-
+    const saveSection =
       document.querySelector(
-        "[data-current-document-actions]"
-      ) ||
-
-      document.querySelector(
-        ".current-document-actions"
-      ) ||
-
-      document.querySelector(
-        ".document-actions"
-      ) ||
-
-      document.querySelector(
-        ".current-pdf-actions"
-      ) ||
-
-      document.querySelector(
-        ".pdf-actions"
+        ".ctr-save-controls > div:first-child"
       );
 
 
-    if (!host) {
+    if (!saveSection) {
 
       return null;
 
     }
 
 
-    element =
+    status =
       document.createElement(
-        "div"
+        "small"
       );
 
 
-    element.id =
-      "ctrPdfGeneratorStatus";
+    status.id =
+      "ctrPdfStatus";
 
 
-    element.style.marginTop =
-      "10px";
-
-    element.style.fontSize =
-      "12px";
-
-    element.style.lineHeight =
-      "1.5";
+    status.textContent =
+      "PDF Ready";
 
 
-    host.appendChild(
-      element
+    status.style.display =
+      "block";
+
+
+    status.style.marginTop =
+      "4px";
+
+
+    status.style.color =
+      "#607487";
+
+
+    saveSection.appendChild(
+      status
     );
 
 
-    return element;
+    return status;
 
   }
 
 
-  function showGeneratorStatus(
+  function setPdfStatus(
     message,
-    type = "info"
+    type = "normal"
   ) {
 
-    const element =
-      getStatusElement();
+    const status =
+      ensurePdfStatus();
 
 
-    if (!element) {
+    if (!status) {
 
       return;
 
     }
 
 
-    element.textContent =
-      message || "";
-
-
-    element.dataset.statusType =
-      type;
+    status.textContent =
+      message;
 
 
     if (
-      type ===
-      "error"
+      type === "error"
     ) {
 
-      element.style.color =
-        "#a61b1b";
+      status.style.color =
+        "#9b2d2d";
+
+      return;
 
     }
 
-    else if (
-      type ===
-      "success"
+
+    if (
+      type === "success"
     ) {
 
-      element.style.color =
-        "#166534";
+      status.style.color =
+        "#31663c";
+
+      return;
 
     }
 
-    else {
 
-      element.style.color =
-        "#35516d";
-
-    }
+    status.style.color =
+      "#607487";
 
   }
 
 
-  /* =========================================================
-     LOAD JSPDF
-  ========================================================= */
+  /* =====================================================
+     JSPDF
+  ===================================================== */
 
-  function loadJsPdf() {
+  function getJsPdfClass() {
 
-    return new Promise(
+    return (
+      window
+        .jspdf
+        ?.jsPDF ||
+      null
+    );
+
+  }
+
+
+  function requirePdfLibrary() {
+
+    const JsPdf =
+      getJsPdfClass();
+
+
+    if (!JsPdf) {
+
+      throw new Error(
+        "PDF library is not loaded. Check the jsPDF script in station.html."
+      );
+
+    }
+
+
+    return JsPdf;
+
+  }
+
+
+  /* =====================================================
+     SVG STYLE INLINE
+
+     Connection drawings use CSS classes.
+     Before converting to an image, computed CSS is copied
+     directly into the cloned SVG.
+  ===================================================== */
+
+  const SVG_STYLE_PROPERTIES = [
+
+    "fill",
+
+    "fill-opacity",
+
+    "stroke",
+
+    "stroke-width",
+
+    "stroke-opacity",
+
+    "stroke-linecap",
+
+    "stroke-linejoin",
+
+    "stroke-dasharray",
+
+    "font-family",
+
+    "font-size",
+
+    "font-weight",
+
+    "font-style",
+
+    "text-anchor",
+
+    "dominant-baseline",
+
+    "paint-order",
+
+    "opacity",
+
+    "visibility",
+
+    "display",
+
+    "shape-rendering"
+
+  ];
+
+
+  function copyComputedStyle(
+    source,
+    target
+  ) {
+
+    if (
+      !source ||
+      !target ||
+      source.nodeType !== 1 ||
+      target.nodeType !== 1
+    ) {
+
+      return;
+
+    }
+
+
+    const computed =
+      window.getComputedStyle(
+        source
+      );
+
+
+    SVG_STYLE_PROPERTIES.forEach(
       function (
-        resolve,
-        reject
+        property
       ) {
 
+        const value =
+          computed.getPropertyValue(
+            property
+          );
+
+
         if (
-          window.jspdf?.jsPDF
+          value &&
+          value !== "normal"
         ) {
 
-          resolve(
-            window.jspdf.jsPDF
+          target.style.setProperty(
+            property,
+            value
           );
-
-          return;
 
         }
-
-
-        const existing =
-          document.querySelector(
-            'script[data-ctr-jspdf="true"]'
-          );
-
-
-        if (existing) {
-
-          existing.addEventListener(
-            "load",
-            function () {
-
-              if (
-                window.jspdf?.jsPDF
-              ) {
-
-                resolve(
-                  window.jspdf.jsPDF
-                );
-
-              }
-
-              else {
-
-                reject(
-                  new Error(
-                    "jsPDF loaded but is unavailable."
-                  )
-                );
-
-              }
-
-            },
-            {
-              once:
-                true
-            }
-          );
-
-
-          existing.addEventListener(
-            "error",
-            function () {
-
-              reject(
-                new Error(
-                  "Unable to load jsPDF."
-                )
-              );
-
-            },
-            {
-              once:
-                true
-            }
-          );
-
-
-          return;
-
-        }
-
-
-        const script =
-          document.createElement(
-            "script"
-          );
-
-
-        script.src =
-          JSPDF_URL;
-
-
-        script.async =
-          true;
-
-
-        script.dataset.ctrJspdf =
-          "true";
-
-
-        script.onload =
-          function () {
-
-            if (
-              window.jspdf?.jsPDF
-            ) {
-
-              resolve(
-                window.jspdf.jsPDF
-              );
-
-            }
-
-            else {
-
-              reject(
-                new Error(
-                  "jsPDF loaded but is unavailable."
-                )
-              );
-
-            }
-
-          };
-
-
-        script.onerror =
-          function () {
-
-            reject(
-              new Error(
-                "Unable to load jsPDF."
-              )
-            );
-
-          };
-
-
-        document.head.appendChild(
-          script
-        );
 
       }
     );
@@ -448,3658 +569,1653 @@
   }
 
 
-  /* =========================================================
-     LOAD CONTROLLED PDF SOURCE
-  ========================================================= */
-
-  async function loadPdfSource(
-    workflowId
+  function cloneSvgWithStyles(
+    originalSvg
   ) {
 
-    const client =
-      getSupabaseClient();
+    const clone =
+      originalSvg.cloneNode(
+        true
+      );
 
 
-    const {
-      data,
-      error
-    } =
-      await client.rpc(
-        "get_initial_ctr_pdf_source",
-        {
+    clone.setAttribute(
+      "xmlns",
+      "http://www.w3.org/2000/svg"
+    );
 
-          p_workflow_id:
-            workflowId
+
+    clone.setAttribute(
+      "xmlns:xlink",
+      "http://www.w3.org/1999/xlink"
+    );
+
+
+    copyComputedStyle(
+      originalSvg,
+      clone
+    );
+
+
+    const sourceElements =
+      originalSvg.querySelectorAll(
+        "*"
+      );
+
+
+    const clonedElements =
+      clone.querySelectorAll(
+        "*"
+      );
+
+
+    sourceElements.forEach(
+      function (
+        source,
+        index
+      ) {
+
+        const target =
+          clonedElements[
+            index
+          ];
+
+
+        if (target) {
+
+          copyComputedStyle(
+            source,
+            target
+          );
+
+        }
+
+      }
+    );
+
+
+    /*
+       Remove browser-only interaction styling.
+    */
+
+    clone
+      .querySelectorAll(
+        "[tabindex]"
+      )
+      .forEach(
+        function (
+          element
+        ) {
+
+          element.removeAttribute(
+            "tabindex"
+          );
 
         }
       );
 
 
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    if (!data) {
-
-      throw new Error(
-        "CTR PDF source is not available."
-      );
-
-    }
-
-
-    return Array.isArray(data)
-      ? data[0]
-      : data;
-
-  }
-
-
-  /* =========================================================
-     SHA-256
-  ========================================================= */
-
-  async function sha256Hex(
-    arrayBuffer
-  ) {
-
-    if (
-      !window.crypto?.subtle
-    ) {
-
-      throw new Error(
-        "Browser SHA-256 support is not available."
-      );
-
-    }
-
-
-    const digest =
-      await window.crypto.subtle.digest(
-        "SHA-256",
-        arrayBuffer
-      );
-
-
-    return Array
-      .from(
-        new Uint8Array(
-          digest
-        )
+    clone
+      .querySelectorAll(
+        "[role]"
       )
-      .map(
-        function (byte) {
+      .forEach(
+        function (
+          element
+        ) {
 
-          return byte
-            .toString(16)
-            .padStart(
-              2,
-              "0"
-            );
+          element.removeAttribute(
+            "role"
+          );
 
         }
-      )
-      .join("");
+      );
+
+
+    return clone;
 
   }
 
 
-  /* =========================================================
-     ARRAY CHUNK
-  ========================================================= */
+  /* =====================================================
+     SVG SIZE
+  ===================================================== */
 
-  function chunkArray(
-    items,
-    size
+  function getSvgSize(
+    svg
   ) {
 
-    const result =
-      [];
-
-
-    for (
-      let index = 0;
-      index < items.length;
-      index += size
-    ) {
-
-      result.push(
-        items.slice(
-          index,
-          index + size
+    const viewBox =
+      cleanText(
+        svg.getAttribute(
+          "viewBox"
         )
       );
 
-    }
 
+    if (viewBox) {
 
-    return result;
-
-  }
-
-
-  /* =========================================================
-     PDF ENGINEERING DRAWING WRITER
-  ========================================================= */
-
-  function createPdfWriter(
-    jsPDF,
-    source
-  ) {
-
-    const doc =
-      new jsPDF({
-
-        orientation:
-          "landscape",
-
-        unit:
-          "mm",
-
-        format:
-          "a4",
-
-        compress:
-          true
-
-      });
-
-
-    /* -------------------------------------------------------
-       PAGE CONSTANTS
-    ------------------------------------------------------- */
-
-    const PAGE_WIDTH =
-      297;
-
-    const PAGE_HEIGHT =
-      210;
-
-    const MARGIN_X =
-      10;
-
-    const TOP_Y =
-      11;
-
-    const BOTTOM_Y =
-      196;
-
-    const USABLE_WIDTH =
-      PAGE_WIDTH -
-      MARGIN_X * 2;
-
-
-    /* -------------------------------------------------------
-       SOURCE DETAILS
-    ------------------------------------------------------- */
-
-    const station =
-      source?.station ||
-      {};
-
-
-    const division =
-      station?.division ||
-      {};
-
-
-    const stationName =
-      firstValue(
-
-        station.name,
-
-        station.station_name,
-
-        source.station_name,
-
-        "Station"
-
-      );
-
-
-    const stationCode =
-      firstValue(
-
-        station.code,
-
-        station.station_code,
-
-        source.station_code,
-
-        "-"
-
-      );
-
-
-    const recordName =
-      firstValue(
-
-        source.record_name,
-
-        "Initial CTR"
-
-      );
-
-
-    let y =
-      TOP_Y;
-
-
-    /* =====================================================
-       FONT
-    ===================================================== */
-
-    function setFont(
-      size = 9,
-      style = "normal"
-    ) {
-
-      doc.setFont(
-        "helvetica",
-        style
-      );
-
-
-      doc.setFontSize(
-        size
-      );
-
-
-      doc.setTextColor(
-        20,
-        20,
-        20
-      );
-
-    }
-
-
-    /* =====================================================
-       PAGE BREAK
-    ===================================================== */
-
-    function addPage() {
-
-      doc.addPage(
-        "a4",
-        "landscape"
-      );
-
-
-      y =
-        TOP_Y;
-
-
-      drawContinuationHeader();
-
-    }
-
-
-    function ensureSpace(
-      height
-    ) {
-
-      if (
-        y + height >
-        BOTTOM_Y
-      ) {
-
-        addPage();
-
-      }
-
-    }
-
-
-    function move(
-      amount
-    ) {
-
-      y +=
-        amount;
-
-    }
-
-
-    /* =====================================================
-       CONTINUATION HEADER
-    ===================================================== */
-
-    function drawContinuationHeader() {
-
-      setFont(
-        8,
-        "bold"
-      );
-
-
-      doc.text(
-        `${stationName} (${stationCode})`,
-        MARGIN_X,
-        y
-      );
-
-
-      doc.text(
-        recordName,
-        PAGE_WIDTH - MARGIN_X,
-        y,
-        {
-          align:
-            "right"
-        }
-      );
-
-
-      doc.setDrawColor(
-        120,
-        120,
-        120
-      );
-
-
-      doc.setLineWidth(
-        0.25
-      );
-
-
-      doc.line(
-
-        MARGIN_X,
-
-        y + 2.2,
-
-        PAGE_WIDTH -
-          MARGIN_X,
-
-        y + 2.2
-
-      );
-
-
-      y +=
-        7;
-
-    }
-
-
-    /* =====================================================
-       MAIN DOCUMENT HEADER
-    ===================================================== */
-
-    function drawMainHeader() {
-
-      setFont(
-        7.5,
-        "normal"
-      );
-
-
-      doc.text(
-        "CTR MANAGEMENT SYSTEM - CONTROLLED ENGINEERING DRAWING",
-        MARGIN_X,
-        y
-      );
-
-
-      y +=
-        5;
-
-
-      setFont(
-        18,
-        "bold"
-      );
-
-
-      doc.text(
-        "CTR DRAWING",
-        PAGE_WIDTH / 2,
-        y,
-        {
-          align:
-            "center"
-        }
-      );
-
-
-      y +=
-        6;
-
-
-      setFont(
-        11,
-        "bold"
-      );
-
-
-      doc.text(
-        recordName,
-        PAGE_WIDTH / 2,
-        y,
-        {
-          align:
-            "center"
-        }
-      );
-
-
-      y +=
-        5;
-
-
-      doc.setDrawColor(
-        30,
-        30,
-        30
-      );
-
-
-      doc.setLineWidth(
-        0.35
-      );
-
-
-      doc.line(
-
-        MARGIN_X,
-
-        y,
-
-        PAGE_WIDTH -
-          MARGIN_X,
-
-        y
-
-      );
-
-
-      y +=
-        5;
-
-
-      const divisionName =
-        firstValue(
-
-          division.name,
-
-          division.division_name,
-
-          station.division_name,
-
-          source.division_name,
-
-          "-"
-
-        );
-
-
-      const divisionCode =
-        firstValue(
-
-          division.code,
-
-          division.division_code,
-
-          station.division_code,
-
-          source.division_code,
-
-          "-"
-
-        );
-
-
-      const zone =
-        firstValue(
-
-          division.zone,
-
-          division.zone_name,
-
-          station.zone,
-
-          station.zone_name,
-
-          source.zone_name,
-
-          "-"
-
-        );
-
-
-      const sectionalIncharge =
-        firstValue(
-
-          station.sectional_incharge,
-
-          station.sectional_incharge_designation,
-
-          source.sectional_incharge,
-
-          source.sectional_incharge_designation,
-
-          "-"
-
-        );
-
-
-      const preparedBy =
-        firstValue(
-
-          source?.preparer?.name,
-
-          source?.preparer?.full_name,
-
-          source.preparer_name,
-
-          "-"
-
-        );
-
-
-      const preparedDesignation =
-        firstValue(
-
-          source?.preparer?.designation,
-
-          source.preparer_designation,
-
-          "-"
-
-        );
-
-
-      const leftX =
-        MARGIN_X;
-
-      const midX =
-        82;
-
-      const rightX =
-        154;
-
-      const fourthX =
-        225;
-
-
-      setFont(
-        7,
-        "normal"
-      );
-
-
-      doc.text(
-        "STATION",
-        leftX,
-        y
-      );
-
-
-      doc.text(
-        "STATION CODE",
-        midX,
-        y
-      );
-
-
-      doc.text(
-        "DIVISION",
-        rightX,
-        y
-      );
-
-
-      doc.text(
-        "RAILWAY ZONE",
-        fourthX,
-        y
-      );
-
-
-      y +=
-        4;
-
-
-      setFont(
-        10,
-        "bold"
-      );
-
-
-      doc.text(
-        displayText(
-          stationName
-        ),
-        leftX,
-        y
-      );
-
-
-      doc.text(
-        displayText(
-          stationCode
-        ),
-        midX,
-        y
-      );
-
-
-      doc.text(
-
-        `${displayText(
-          divisionName
-        )} (${displayText(
-          divisionCode
-        )})`,
-
-        rightX,
-
-        y,
-
-        {
-          maxWidth:
-            63
-        }
-
-      );
-
-
-      doc.text(
-
-        displayText(
-          zone
-        ),
-
-        fourthX,
-
-        y,
-
-        {
-          maxWidth:
-            60
-        }
-
-      );
-
-
-      y +=
-        7;
-
-
-      setFont(
-        7,
-        "normal"
-      );
-
-
-      doc.text(
-        "SECTIONAL INCHARGE",
-        leftX,
-        y
-      );
-
-
-      doc.text(
-        "PREPARED BY",
-        rightX,
-        y
-      );
-
-
-      doc.text(
-        "GENERATED ON",
-        fourthX,
-        y
-      );
-
-
-      y +=
-        4;
-
-
-      setFont(
-        9,
-        "bold"
-      );
-
-
-      doc.text(
-
-        displayText(
-          sectionalIncharge
-        ),
-
-        leftX,
-
-        y,
-
-        {
-          maxWidth:
-            120
-        }
-
-      );
-
-
-      doc.text(
-
-        `${displayText(
-          preparedBy
-        )} / ${displayText(
-          preparedDesignation
-        )}`,
-
-        rightX,
-
-        y,
-
-        {
-          maxWidth:
-            65
-        }
-
-      );
-
-
-      doc.text(
-
-        formatDateTime(),
-
-        fourthX,
-
-        y,
-
-        {
-          maxWidth:
-            60
-        }
-
-      );
-
-
-      y +=
-        7;
-
-
-      doc.setDrawColor(
-        120,
-        120,
-        120
-      );
-
-
-      doc.setLineWidth(
-        0.25
-      );
-
-
-      doc.line(
-
-        MARGIN_X,
-
-        y,
-
-        PAGE_WIDTH -
-          MARGIN_X,
-
-        y
-
-      );
-
-
-      y +=
-        5;
-
-    }
-
-
-    /* =====================================================
-       SECTION BAND
-    ===================================================== */
-
-    function drawBand(
-      title,
-      subtitle
-    ) {
-
-      ensureSpace(
-        subtitle
-          ? 15
-          : 11
-      );
-
-
-      doc.setFillColor(
-        242,
-        245,
-        247
-      );
-
-
-      doc.setDrawColor(
-        65,
-        65,
-        65
-      );
-
-
-      doc.setLineWidth(
-        0.3
-      );
-
-
-      doc.rect(
-
-        MARGIN_X,
-
-        y,
-
-        USABLE_WIDTH,
-
-        subtitle
-          ? 13
-          : 9,
-
-        "FD"
-
-      );
-
-
-      setFont(
-        subtitle
-          ? 7
-          : 9,
-        "bold"
-      );
-
-
-      if (
-        subtitle
-      ) {
-
-        doc.text(
-
-          cleanText(
-            subtitle
-          ).toUpperCase(),
-
-          MARGIN_X + 4,
-
-          y + 4.2
-
-        );
-
-
-        setFont(
-          11,
-          "bold"
-        );
-
-
-        doc.text(
-
-          displayText(
-            title
-          ),
-
-          MARGIN_X + 4,
-
-          y + 9.4
-
-        );
-
-      }
-
-      else {
-
-        doc.text(
-
-          displayText(
-            title
-          ),
-
-          MARGIN_X + 4,
-
-          y + 5.8
-
-        );
-
-      }
-
-
-      y +=
-        subtitle
-          ? 17
-          : 13;
-
-    }
-
-
-    /* =====================================================
-       CTR RACK HEADER
-    ===================================================== */
-
-    function drawCenteredRackHeader(
-      rackName
-    ) {
-
-      ensureSpace(
-        20
-      );
-
-
-      doc.setDrawColor(
-        35,
-        35,
-        35
-      );
-
-
-      doc.setLineWidth(
-        0.35
-      );
-
-
-      doc.rect(
-
-        MARGIN_X,
-
-        y,
-
-        USABLE_WIDTH,
-
-        17
-
-      );
-
-
-      setFont(
-        7,
-        "bold"
-      );
-
-
-      doc.text(
-
-        "CTR RACK",
-
-        PAGE_WIDTH / 2,
-
-        y + 5,
-
-        {
-          align:
-            "center"
-        }
-
-      );
-
-
-      setFont(
-        14,
-        "bold"
-      );
-
-
-      doc.text(
-
-        displayText(
-          rackName
-        ),
-
-        PAGE_WIDTH / 2,
-
-        y + 11.7,
-
-        {
-          align:
-            "center"
-        }
-
-      );
-
-
-      doc.setLineWidth(
-        0.25
-      );
-
-
-      doc.line(
-
-        PAGE_WIDTH / 2 - 24,
-
-        y + 14,
-
-        PAGE_WIDTH / 2 + 24,
-
-        y + 14
-
-      );
-
-
-      y +=
-        21;
-
-    }
-
-
-    /* =====================================================
-       DRAWING SUB HEADING
-    ===================================================== */
-
-    function drawSubHeading(
-      kicker,
-      title
-    ) {
-
-      ensureSpace(
-        12
-      );
-
-
-      setFont(
-        6.7,
-        "bold"
-      );
-
-
-      doc.text(
-
-        cleanText(
-          kicker
-        ).toUpperCase(),
-
-        PAGE_WIDTH / 2,
-
-        y + 3,
-
-        {
-          align:
-            "center"
-        }
-
-      );
-
-
-      setFont(
-        10.5,
-        "bold"
-      );
-
-
-      doc.text(
-
-        displayText(
-          title
-        ),
-
-        PAGE_WIDTH / 2,
-
-        y + 8,
-
-        {
-          align:
-            "center"
-        }
-
-      );
-
-
-      const width =
-        Math.min(
-
-          65,
-
-          Math.max(
-
-            28,
-
-            doc.getTextWidth(
-              displayText(
-                title
-              )
-            ) + 6
-
+      const parts =
+        viewBox
+          .split(
+            /[\s,]+/
           )
-
-        );
-
-
-      doc.setLineWidth(
-        0.25
-      );
-
-
-      doc.line(
-
-        PAGE_WIDTH / 2 -
-          width / 2,
-
-        y + 10,
-
-        PAGE_WIDTH / 2 +
-          width / 2,
-
-        y + 10
-
-      );
-
-
-      y +=
-        14;
-
-    }
-
-
-    /* =====================================================
-       TECHNICAL FUSE SYMBOL
-
-       Same visual logic as website:
-       conductor
-       connection point
-       fuse link
-       bottom terminal
-    ===================================================== */
-
-    function drawFuseSymbol(
-      centreX,
-      topY
-    ) {
-
-      doc.setDrawColor(
-        20,
-        20,
-        20
-      );
-
-
-      doc.setLineWidth(
-        0.35
-      );
-
-
-      /* Incoming conductor */
-
-      doc.line(
-
-        centreX,
-
-        topY,
-
-        centreX,
-
-        topY + 4
-
-      );
-
-
-      /* Upper connection */
-
-      doc.circle(
-
-        centreX,
-
-        topY + 5.2,
-
-        0.8,
-
-        "S"
-
-      );
-
-
-      /* Fuse diagonal */
-
-      doc.line(
-
-        centreX,
-
-        topY + 6.3,
-
-        centreX - 3.4,
-
-        topY + 9.7
-
-      );
-
-
-      doc.line(
-
-        centreX - 3.4,
-
-        topY + 9.7,
-
-        centreX + 3.4,
-
-        topY + 9.7
-
-      );
-
-
-      doc.line(
-
-        centreX + 3.4,
-
-        topY + 9.7,
-
-        centreX,
-
-        topY + 13.1
-
-      );
-
-
-      /* Lower conductor */
-
-      doc.line(
-
-        centreX,
-
-        topY + 13.1,
-
-        centreX,
-
-        topY + 16.1
-
-      );
-
-
-      /* Lower terminal */
-
-      doc.circle(
-
-        centreX,
-
-        topY + 17.2,
-
-        0.9,
-
-        "S"
-
-      );
-
-
-      /* Tail */
-
-      doc.line(
-
-        centreX,
-
-        topY + 18.1,
-
-        centreX,
-
-        topY + 20.5
-
-      );
-
-    }
-
-
-    /* =====================================================
-       FUSE DETAILS DRAWING
-    ===================================================== */
-
-    function drawFuseSection(
-      owner,
-      heading
-    ) {
-
-      const fuses =
-        safeArray(
-          owner?.fuseDetails
-        );
-
-
-      drawSubHeading(
-
-        "FUSE DETAILS",
-
-        heading
-
-      );
+          .map(
+            Number
+          );
 
 
       if (
-        fuses.length ===
-        0
+        parts.length ===
+          4 &&
+        Number.isFinite(
+          parts[2]
+        ) &&
+        Number.isFinite(
+          parts[3]
+        ) &&
+        parts[2] > 0 &&
+        parts[3] > 0
       ) {
 
-        ensureSpace(
-          9
-        );
+        return {
 
+          width:
+            parts[2],
 
-        setFont(
-          7.5,
-          "normal"
-        );
+          height:
+            parts[3]
 
-
-        doc.text(
-
-          "No fuse points configured.",
-
-          MARGIN_X + 2,
-
-          y + 3
-
-        );
-
-
-        y +=
-          9;
-
-
-        return;
+        };
 
       }
 
-
-      const itemWidth =
-        36;
-
-
-      const itemsPerLine =
-        Math.max(
-
-          1,
-
-          Math.floor(
-            USABLE_WIDTH /
-            itemWidth
-          )
-
-        );
-
-
-      const groups =
-        chunkArray(
-
-          fuses,
-
-          itemsPerLine
-
-        );
-
-
-      groups.forEach(
-        function (group) {
-
-          ensureSpace(
-            42
-          );
-
-
-          const groupWidth =
-            group.length *
-            itemWidth;
-
-
-          const startX =
-
-            MARGIN_X +
-
-            (
-              USABLE_WIDTH -
-              groupWidth
-            ) / 2;
-
-
-          group.forEach(
-            function (
-              fuse,
-              index
-            ) {
-
-              const centreX =
-
-                startX +
-
-                index *
-                itemWidth +
-
-                itemWidth / 2;
-
-
-              const details =
-                displayText(
-
-                  fuse?.details,
-
-                  "Fuse"
-
-                );
-
-
-              const wrapped =
-                doc
-                  .splitTextToSize(
-
-                    details,
-
-                    itemWidth - 4
-
-                  )
-                  .slice(
-                    0,
-                    2
-                  );
-
-
-              setFont(
-                6.5,
-                "bold"
-              );
-
-
-              doc.text(
-
-                wrapped,
-
-                centreX,
-
-                y + 3,
-
-                {
-                  align:
-                    "center",
-
-                  maxWidth:
-                    itemWidth - 4
-                }
-
-              );
-
-
-              setFont(
-                5.5,
-                "normal"
-              );
-
-
-              doc.text(
-
-                `${displayText(
-                  owner?.name,
-                  "CTR"
-                )} FUSE`,
-
-                centreX,
-
-                y + 9,
-
-                {
-                  align:
-                    "center"
-                }
-
-              );
-
-
-              drawFuseSymbol(
-
-                centreX,
-
-                y + 11
-
-              );
-
-
-              setFont(
-                7.5,
-                "bold"
-              );
-
-
-              doc.text(
-
-                displayText(
-
-                  fuse?.label,
-
-                  `F${index + 1}`
-
-                ),
-
-                centreX,
-
-                y + 35,
-
-                {
-                  align:
-                    "center"
-                }
-
-              );
-
-            }
-          );
-
-
-          y +=
-            40;
-
-        }
-      );
-
     }
 
 
-    /* =====================================================
-       TERMINAL ROW DRAWING
-
-       Website style:
-       Particular / SPARE
-             |
-       ---------------------------
-             |
-             O
-            01
-    ===================================================== */
-
-    function drawTerminalBlock(
-      row,
-      terminals,
-      segmentIndex,
-      segmentCount
-    ) {
-
-      ensureSpace(
-        42
+    const width =
+      parseFloat(
+        svg.getAttribute(
+          "width"
+        )
       );
 
 
-      const rowLabel =
-        displayText(
-          row?.label,
-          "-"
-        );
-
-
-      const circleX =
-        MARGIN_X + 10;
-
-
-      const baselineStart =
-        MARGIN_X + 26;
-
-
-      const baselineEnd =
-
-        PAGE_WIDTH -
-
-        MARGIN_X -
-
-        4;
-
-
-      const baselineY =
-        y + 22;
-
-
-      /* ---------------------------------------------------
-         ROW A / B / C CIRCLE
-      --------------------------------------------------- */
-
-      doc.setDrawColor(
-        35,
-        35,
-        35
+    const height =
+      parseFloat(
+        svg.getAttribute(
+          "height"
+        )
       );
-
-
-      doc.setLineWidth(
-        0.3
-      );
-
-
-      doc.circle(
-
-        circleX,
-
-        y + 18,
-
-        4,
-
-        "S"
-
-      );
-
-
-      setFont(
-        8.5,
-        "normal"
-      );
-
-
-      doc.text(
-
-        rowLabel,
-
-        circleX,
-
-        y + 19.2,
-
-        {
-          align:
-            "center"
-        }
-
-      );
-
-
-      /* ---------------------------------------------------
-         COLUMN CONTINUATION
-      --------------------------------------------------- */
-
-      if (
-        segmentCount >
-        1
-      ) {
-
-        setFont(
-          5.5,
-          "normal"
-        );
-
-
-        doc.text(
-
-          `Columns ${
-            segmentIndex *
-            MAX_TERMINALS_PER_STRIP +
-            1
-          }-${
-            segmentIndex *
-            MAX_TERMINALS_PER_STRIP +
-            terminals.length
-          }`,
-
-          circleX,
-
-          y + 25.5,
-
-          {
-            align:
-              "center"
-          }
-
-        );
-
-      }
-
-
-      /* ---------------------------------------------------
-         MAIN HORIZONTAL CONDUCTOR LINE
-      --------------------------------------------------- */
-
-      doc.line(
-
-        baselineStart,
-
-        baselineY,
-
-        baselineEnd,
-
-        baselineY
-
-      );
-
-
-      if (
-        terminals.length ===
-        0
-      ) {
-
-        setFont(
-          7,
-          "normal"
-        );
-
-
-        doc.text(
-
-          "No terminals configured.",
-
-          baselineStart + 4,
-
-          y + 14
-
-        );
-
-
-        y +=
-          36;
-
-
-        return;
-
-      }
-
-
-      const span =
-
-        baselineEnd -
-
-        baselineStart;
-
-
-      const cellWidth =
-
-        span /
-
-        terminals.length;
-
-
-      terminals.forEach(
-        function (
-          terminal,
-          index
-        ) {
-
-          const centreX =
-
-            baselineStart +
-
-            cellWidth *
-            (
-              index +
-              0.5
-            );
-
-
-          const particular =
-            firstValue(
-
-              terminal?.particular,
-
-              terminal?.status,
-
-              "SPARE"
-
-            );
-
-
-          const textWidth =
-            Math.max(
-
-              10,
-
-              cellWidth - 2
-
-            );
-
-
-          const lines =
-            doc
-              .splitTextToSize(
-
-                particular,
-
-                textWidth
-
-              )
-              .slice(
-                0,
-                2
-              );
-
-
-          /* -----------------------------------------------
-             PARTICULAR ABOVE TERMINAL
-          ----------------------------------------------- */
-
-          setFont(
-            5.3,
-            "normal"
-          );
-
-
-          doc.text(
-
-            lines,
-
-            centreX,
-
-            y + 7,
-
-            {
-              align:
-                "center",
-
-              maxWidth:
-                textWidth
-            }
-
-          );
-
-
-          /*
-            If terminal has actual particular,
-            show status in tiny text below it.
-          */
-
-          if (
-            terminal?.particular &&
-            terminal?.status
-          ) {
-
-            setFont(
-              4.8,
-              "normal"
-            );
-
-
-            doc.text(
-
-              cleanText(
-                terminal.status
-              ),
-
-              centreX,
-
-              y + 13.5,
-
-              {
-                align:
-                  "center"
-              }
-
-            );
-
-          }
-
-
-          /* -----------------------------------------------
-             VERTICAL TERMINAL LINE
-          ----------------------------------------------- */
-
-          doc.setDrawColor(
-            25,
-            25,
-            25
-          );
-
-
-          doc.setLineWidth(
-            0.28
-          );
-
-
-          doc.line(
-
-            centreX,
-
-            baselineY - 4,
-
-            centreX,
-
-            baselineY + 5.5
-
-          );
-
-
-          /* -----------------------------------------------
-             TERMINAL CONNECTION POINT
-          ----------------------------------------------- */
-
-          doc.circle(
-
-            centreX,
-
-            baselineY + 8.2,
-
-            1.15,
-
-            "S"
-
-          );
-
-
-          /* -----------------------------------------------
-             TERMINAL NUMBER
-          ----------------------------------------------- */
-
-          setFont(
-            6.2,
-            "normal"
-          );
-
-
-          doc.text(
-
-            displayText(
-
-              terminal?.number,
-
-              String(
-                index + 1
-              ).padStart(
-                2,
-                "0"
-              )
-
-            ),
-
-            centreX,
-
-            baselineY + 13.6,
-
-            {
-              align:
-                "center"
-            }
-
-          );
-
-
-          /* -----------------------------------------------
-             CONNECTED LOCATION REFERENCE
-
-             Only shown when entered.
-          ----------------------------------------------- */
-
-          const connection =
-            firstValue(
-
-              terminal?.locationBox &&
-              terminal?.locationTerminal
-
-                ? `${terminal.locationBox}/${terminal.locationTerminal}`
-
-                : "",
-
-              terminal?.locationBox,
-
-              ""
-
-            );
-
-
-          if (
-            connection
-          ) {
-
-            setFont(
-              4.5,
-              "normal"
-            );
-
-
-            const connectionLines =
-              doc
-                .splitTextToSize(
-
-                  connection,
-
-                  textWidth
-
-                )
-                .slice(
-                  0,
-                  1
-                );
-
-
-            doc.text(
-
-              connectionLines,
-
-              centreX,
-
-              baselineY + 17.2,
-
-              {
-                align:
-                  "center",
-
-                maxWidth:
-                  textWidth
-              }
-
-            );
-
-          }
-
-        }
-      );
-
-
-      y +=
-        40;
-
-    }
-
-
-    /* =====================================================
-       COMPLETE TERMINAL ROWS
-    ===================================================== */
-
-    function drawTerminalRows(
-      owner,
-      headingLabel = "CTR TERMINALS"
-    ) {
-
-      const rows =
-        safeArray(
-          owner?.rows
-        );
-
-
-      drawSubHeading(
-
-        headingLabel,
-
-        "Row & Column Structure"
-
-      );
-
-
-      if (
-        rows.length ===
-        0
-      ) {
-
-        ensureSpace(
-          9
-        );
-
-
-        setFont(
-          7.5,
-          "normal"
-        );
-
-
-        doc.text(
-
-          "No terminal rows configured.",
-
-          MARGIN_X + 2,
-
-          y + 3
-
-        );
-
-
-        y +=
-          9;
-
-
-        return;
-
-      }
-
-
-      rows.forEach(
-        function (row) {
-
-          const terminals =
-            safeArray(
-              row?.terminals
-            );
-
-
-          const groups =
-
-            terminals.length
-
-              ? chunkArray(
-
-                  terminals,
-
-                  MAX_TERMINALS_PER_STRIP
-
-                )
-
-              : [
-                  []
-                ];
-
-
-          groups.forEach(
-            function (
-              group,
-              groupIndex
-            ) {
-
-              drawTerminalBlock(
-
-                row,
-
-                group,
-
-                groupIndex,
-
-                groups.length
-
-              );
-
-            }
-          );
-
-        }
-      );
-
-    }
-
-
-    /* =====================================================
-       STATION CTR RACK
-    ===================================================== */
-
-    function drawStationRack(
-      rack,
-      rackIndex
-    ) {
-
-      const rackName =
-        displayText(
-
-          rack?.name,
-
-          `K${rackIndex + 1}`
-
-        );
-
-
-      drawCenteredRackHeader(
-        rackName
-      );
-
-
-      drawFuseSection(
-
-        rack,
-
-        `${rackName} Fuse Details`
-
-      );
-
-
-      drawTerminalRows(
-
-        rack,
-
-        "CTR TERMINALS"
-
-      );
-
-
-      move(
-        4
-      );
-
-    }
-
-
-    /* =====================================================
-       LOCATION BOX
-
-       IMPORTANT:
-       Location Box has NO K1 / K2 / K3 layer.
-
-       LOCATION BOX
-          -> Fuse Details
-          -> Rows
-          -> Columns / Terminals
-    ===================================================== */
-
-    function drawLocationBox(
-      location,
-      locationIndex
-    ) {
-
-      const locationName =
-        displayText(
-
-          location?.name,
-
-          `Location Box ${
-            locationIndex + 1
-          }`
-
-        );
-
-
-      drawBand(
-
-        locationName,
-
-        "LOCATION BOX"
-
-      );
-
-
-      drawFuseSection(
-
-        location,
-
-        `${locationName} Fuse Details`
-
-      );
-
-
-      drawTerminalRows(
-
-        location,
-
-        "LOCATION BOX TERMINALS"
-
-      );
-
-
-      move(
-        4
-      );
-
-    }
-
-
-    /* =====================================================
-       CONNECTED END
-    ===================================================== */
-
-    function drawConnectedEnd(
-      end,
-      endIndex
-    ) {
-
-      const endName =
-        displayText(
-
-          end?.name,
-
-          `Connected End ${
-            endIndex + 1
-          }`
-
-        );
-
-
-      drawBand(
-
-        endName,
-
-        "CONNECTED END"
-
-      );
-
-
-      const locations =
-        safeArray(
-          end?.locations
-        );
-
-
-      if (
-        locations.length ===
-        0
-      ) {
-
-        ensureSpace(
-          9
-        );
-
-
-        setFont(
-          7.5,
-          "normal"
-        );
-
-
-        doc.text(
-
-          "No Location Boxes configured for this Connected End.",
-
-          MARGIN_X + 2,
-
-          y + 3
-
-        );
-
-
-        y +=
-          10;
-
-
-        return;
-
-      }
-
-
-      locations.forEach(
-        function (
-          location,
-          locationIndex
-        ) {
-
-          drawLocationBox(
-
-            location,
-
-            locationIndex
-
-          );
-
-        }
-      );
-
-    }
-
-
-    /* =====================================================
-       CONTROLLED DOCUMENT INFORMATION
-    ===================================================== */
-
-    function drawControlledInfo() {
-
-      ensureSpace(
-        33
-      );
-
-
-      drawBand(
-        "Controlled Document Information"
-      );
-
-
-      setFont(
-        6.5,
-        "normal"
-      );
-
-
-      const note =
-
-        "This PDF is generated from the controlled CTR workflow draft stored in the database. Digital signing and final approval are performed separately through the CTR signing workflow.";
-
-
-      const lines =
-        doc.splitTextToSize(
-
-          note,
-
-          USABLE_WIDTH - 4
-
-        );
-
-
-      doc.text(
-
-        lines,
-
-        MARGIN_X + 2,
-
-        y
-
-      );
-
-
-      y +=
-
-        lines.length *
-        3.1 +
-
-        2;
-
-
-      setFont(
-        6.2,
-        "normal"
-      );
-
-
-      doc.text(
-
-        `Workflow ID: ${displayText(
-          source.workflow_id ||
-          getWorkflowId()
-        )}`,
-
-        MARGIN_X + 2,
-
-        y
-
-      );
-
-
-      y +=
-        3.5;
-
-
-      doc.text(
-
-        `Draft ID: ${displayText(
-          source.draft_id
-        )}`,
-
-        MARGIN_X + 2,
-
-        y
-
-      );
-
-
-      y +=
-        3.5;
-
-
-      doc.text(
-
-        `Document State: ${displayText(
-          source.document_state,
-          "Generated"
-        )}`,
-
-        MARGIN_X + 2,
-
-        y
-
-      );
-
-
-      y +=
-        5;
-
-    }
-
-
-    /* =====================================================
-       FINAL FOOTERS
-    ===================================================== */
-
-    function finish() {
-
-      const totalPages =
-        doc.getNumberOfPages();
-
-
-      for (
-        let page = 1;
-        page <= totalPages;
-        page += 1
-      ) {
-
-        doc.setPage(
-          page
-        );
-
-
-        doc.setDrawColor(
-          160,
-          160,
-          160
-        );
-
-
-        doc.setLineWidth(
-          0.2
-        );
-
-
-        doc.line(
-
-          MARGIN_X,
-
-          PAGE_HEIGHT - 10,
-
-          PAGE_WIDTH -
-            MARGIN_X,
-
-          PAGE_HEIGHT - 10
-
-        );
-
-
-        setFont(
-          5.8,
-          "normal"
-        );
-
-
-        doc.text(
-
-          "CTR Management System - Controlled Workflow Document",
-
-          MARGIN_X,
-
-          PAGE_HEIGHT - 6
-
-        );
-
-
-        doc.text(
-
-          `Page ${page} of ${totalPages}`,
-
-          PAGE_WIDTH -
-            MARGIN_X,
-
-          PAGE_HEIGHT - 6,
-
-          {
-            align:
-              "right"
-          }
-
-        );
-
-      }
-
-
-      return doc;
-
-    }
-
-
-    /* -------------------------------------------------------
-       BEGIN FIRST PAGE
-    ------------------------------------------------------- */
-
-    drawMainHeader();
 
 
     return {
 
-      doc,
+      width:
+        Number.isFinite(
+          width
+        )
+          ? width
+          : 1400,
 
-
-      get y() {
-
-        return y;
-
-      },
-
-
-      set y(value) {
-
-        y =
-          value;
-
-      },
-
-
-      ensureSpace,
-
-      move,
-
-      drawBand,
-
-      drawStationRack,
-
-      drawConnectedEnd,
-
-      drawControlledInfo,
-
-      finish
+      height:
+        Number.isFinite(
+          height
+        )
+          ? height
+          : 800
 
     };
 
   }
 
 
-  /* =========================================================
-     BUILD COMPLETE CONTROLLED PDF
-  ========================================================= */
+  /* =====================================================
+     SVG -> PNG
 
-  function buildControlledPdf(
-    jsPDF,
-    source
+     High resolution is used so terminal text and engineering
+     lines remain clear in the PDF.
+  ===================================================== */
+
+  async function svgToPng(
+    svg
   ) {
 
-    const writer =
-      createPdfWriter(
-        jsPDF,
-        source
+    const size =
+      getSvgSize(
+        svg
       );
 
 
-    const drawing =
-
-      source?.drawing ||
-
-      source?.draft_data ||
-
-      {};
+    const maxWidth =
+      3000;
 
 
-    /* =====================================================
-       STATION CTR RACKS
-    ===================================================== */
+    const maxHeight =
+      2100;
 
-    const racks =
-      safeArray(
 
-        drawing.stationCtrRacks ||
+    let scale =
+      Math.min(
 
-        drawing.station_ctr_racks
+        maxWidth /
+          size.width,
+
+        maxHeight /
+          size.height,
+
+        2.2
 
       );
 
 
-    writer.drawBand(
-      "Station CTR Racks"
+    scale =
+      Math.max(
+        scale,
+        0.5
+      );
+
+
+    const canvasWidth =
+      Math.max(
+        1,
+        Math.round(
+          size.width *
+          scale
+        )
+      );
+
+
+    const canvasHeight =
+      Math.max(
+        1,
+        Math.round(
+          size.height *
+          scale
+        )
+      );
+
+
+    svg.setAttribute(
+      "width",
+      size.width
     );
 
 
-    if (
-      racks.length ===
-      0
-    ) {
-
-      writer.ensureSpace(
-        10
-      );
+    svg.setAttribute(
+      "height",
+      size.height
+    );
 
 
-      const doc =
-        writer.doc;
+    const serialized =
+      new XMLSerializer()
+        .serializeToString(
+          svg
+        );
 
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
-
-
-      doc.setFontSize(
-        8
-      );
-
-
-      doc.text(
-
-        "No Station CTR racks configured.",
-
-        12,
-
-        writer.y + 3
-
-      );
-
-
-      writer.move(
-        10
-      );
-
-    }
-
-    else {
-
-      racks.forEach(
-        function (
-          rack,
-          index
-        ) {
-
-          writer.drawStationRack(
-
-            rack,
-
-            index
-
-          );
-
+    const blob =
+      new Blob(
+        [
+          serialized
+        ],
+        {
+          type:
+            "image/svg+xml;charset=utf-8"
         }
       );
 
+
+    const objectUrl =
+      URL.createObjectURL(
+        blob
+      );
+
+
+    try {
+
+      const image =
+        await new Promise(
+          function (
+            resolve,
+            reject
+          ) {
+
+            const img =
+              new Image();
+
+
+            img.onload =
+              function () {
+
+                resolve(
+                  img
+                );
+
+              };
+
+
+            img.onerror =
+              function () {
+
+                reject(
+                  new Error(
+                    "SVG drawing could not be converted for PDF."
+                  )
+                );
+
+              };
+
+
+            img.src =
+              objectUrl;
+
+          }
+        );
+
+
+      const canvas =
+        document.createElement(
+          "canvas"
+        );
+
+
+      canvas.width =
+        canvasWidth;
+
+
+      canvas.height =
+        canvasHeight;
+
+
+      const context =
+        canvas.getContext(
+          "2d"
+        );
+
+
+      if (!context) {
+
+        throw new Error(
+          "Browser canvas is unavailable."
+        );
+
+      }
+
+
+      context.fillStyle =
+        "#ffffff";
+
+
+      context.fillRect(
+        0,
+        0,
+        canvasWidth,
+        canvasHeight
+      );
+
+
+      context.drawImage(
+        image,
+        0,
+        0,
+        canvasWidth,
+        canvasHeight
+      );
+
+
+      return {
+
+        dataUrl:
+          canvas.toDataURL(
+            "image/png"
+          ),
+
+        width:
+          canvasWidth,
+
+        height:
+          canvasHeight
+
+      };
+
+    }
+
+    finally {
+
+      URL.revokeObjectURL(
+        objectUrl
+      );
+
+    }
+
+  }
+
+
+  /* =====================================================
+     CURRENT SVG SNAPSHOT
+  ===================================================== */
+
+  function getSvgFromHost(
+    hostId
+  ) {
+
+    return (
+      document
+        .getElementById(
+          hostId
+        )
+        ?.querySelector(
+          "svg"
+        ) ||
+      null
+    );
+
+  }
+
+
+  async function captureHostSvg(
+    hostId
+  ) {
+
+    await waitFrames(
+      2
+    );
+
+
+    await delay(
+      SVG_CAPTURE_DELAY
+    );
+
+
+    const svg =
+      getSvgFromHost(
+        hostId
+      );
+
+
+    if (!svg) {
+
+      return null;
+
     }
 
 
-    /* =====================================================
-       CONNECTED ENDS + LOCATION BOXES
-    ===================================================== */
+    return cloneSvgWithStyles(
+      svg
+    );
+
+  }
+
+
+  /* =====================================================
+     SELECT CHANGE
+  ===================================================== */
+
+  function changeSelect(
+    select,
+    value
+  ) {
+
+    if (!select) {
+
+      return;
+
+    }
+
+
+    select.value =
+      String(
+        value
+      );
+
+
+    select.dispatchEvent(
+      new Event(
+        "change",
+        {
+          bubbles:
+            true
+        }
+      )
+    );
+
+  }
+
+
+  /* =====================================================
+     STATION RACK PAGES
+  ===================================================== */
+
+  async function captureStationPages() {
+
+    const pages =
+      [];
+
+
+    const select =
+      document.getElementById(
+        "stationSvgRackSelect"
+      );
+
+
+    if (
+      !select ||
+      select.options.length ===
+      0
+    ) {
+
+      return pages;
+
+    }
+
+
+    const originalValue =
+      select.value;
+
+
+    const options =
+      Array.from(
+        select.options
+      )
+        .map(
+          function (
+            option
+          ) {
+
+            return {
+
+              value:
+                option.value,
+
+              label:
+                cleanText(
+                  option.textContent,
+                  "CTR Rack"
+                )
+
+            };
+
+          }
+        );
+
+
+    for (
+      let index = 0;
+      index < options.length;
+      index++
+    ) {
+
+      const option =
+        options[
+          index
+        ];
+
+
+      setPdfStatus(
+        `Preparing Station CTR ${index + 1} of ${options.length}...`
+      );
+
+
+      changeSelect(
+        select,
+        option.value
+      );
+
+
+      await delay(
+        SVG_CAPTURE_DELAY
+      );
+
+
+      window
+        .CTR_STATION_CONNECTIONS
+        ?.redraw?.();
+
+
+      await delay(
+        80
+      );
+
+
+      const svg =
+        await captureHostSvg(
+          "stationSvgHost"
+        );
+
+
+      if (svg) {
+
+        pages.push({
+
+          kind:
+            "STATION",
+
+          title:
+            `Station CTR - ${option.label}`,
+
+          subtitle:
+            option.label,
+
+          svg
+
+        });
+
+      }
+
+    }
+
+
+    changeSelect(
+      select,
+      originalValue
+    );
+
+
+    await delay(
+      100
+    );
+
+
+    return pages;
+
+  }
+
+
+  /* =====================================================
+     LOCATION BOX PAGES
+  ===================================================== */
+
+  async function captureLocationPages() {
+
+    const pages =
+      [];
+
+
+    const endSelect =
+      document.getElementById(
+        "locationSvgEndSelect"
+      );
+
+
+    const boxSelect =
+      document.getElementById(
+        "locationSvgBoxSelect"
+      );
+
+
+    if (
+      !endSelect ||
+      !boxSelect ||
+      endSelect.options.length ===
+      0
+    ) {
+
+      return pages;
+
+    }
+
+
+    const originalEndValue =
+      endSelect.value;
+
+
+    const originalBoxValue =
+      boxSelect.value;
+
 
     const ends =
-      safeArray(
+      Array.from(
+        endSelect.options
+      )
+        .map(
+          function (
+            option
+          ) {
 
-        drawing.connectedEnds ||
+            return {
 
-        drawing.connected_ends
+              value:
+                option.value,
 
+              label:
+                cleanText(
+                  option.textContent,
+                  "Connected End"
+                )
+
+            };
+
+          }
+        );
+
+
+    for (
+      let endIndex = 0;
+      endIndex < ends.length;
+      endIndex++
+    ) {
+
+      const end =
+        ends[
+          endIndex
+        ];
+
+
+      changeSelect(
+        endSelect,
+        end.value
       );
 
 
-    writer.drawBand(
-      "Connected Ends & Location Boxes"
+      await delay(
+        SVG_CAPTURE_DELAY
+      );
+
+
+      /*
+         Changing End repopulates Location Box selector.
+      */
+
+      const locations =
+        Array.from(
+          boxSelect.options
+        )
+          .map(
+            function (
+              option
+            ) {
+
+              return {
+
+                value:
+                  option.value,
+
+                label:
+                  cleanText(
+                    option.textContent,
+                    "Location Box"
+                  )
+
+              };
+
+            }
+          );
+
+
+      for (
+        let locationIndex = 0;
+        locationIndex <
+          locations.length;
+        locationIndex++
+      ) {
+
+        const location =
+          locations[
+            locationIndex
+          ];
+
+
+        setPdfStatus(
+          `Preparing ${end.label} / ${location.label}...`
+        );
+
+
+        changeSelect(
+          boxSelect,
+          location.value
+        );
+
+
+        await delay(
+          SVG_CAPTURE_DELAY
+        );
+
+
+        window
+          .CTR_LOCATION_CONNECTIONS
+          ?.redraw?.();
+
+
+        await delay(
+          80
+        );
+
+
+        const svg =
+          await captureHostSvg(
+            "locationSvgHost"
+          );
+
+
+        if (svg) {
+
+          pages.push({
+
+            kind:
+              "LOCATION",
+
+            title:
+              `${end.label} - ${location.label}`,
+
+            subtitle:
+              `${end.label} / ${location.label}`,
+
+            svg
+
+          });
+
+        }
+
+      }
+
+    }
+
+
+    changeSelect(
+      endSelect,
+      originalEndValue
+    );
+
+
+    await delay(
+      100
     );
 
 
     if (
-      ends.length ===
-      0
+      Array.from(
+        boxSelect.options
+      )
+        .some(
+          function (
+            option
+          ) {
+
+            return (
+              String(
+                option.value
+              ) ===
+              String(
+                originalBoxValue
+              )
+            );
+
+          }
+        )
     ) {
 
-      writer.ensureSpace(
-        10
+      changeSelect(
+        boxSelect,
+        originalBoxValue
+      );
+
+    }
+
+
+    await delay(
+      100
+    );
+
+
+    return pages;
+
+  }
+
+
+  /* =====================================================
+     COLLECT ALL DRAWINGS
+  ===================================================== */
+
+  async function collectDrawingPages() {
+
+    const stationPages =
+      await captureStationPages();
+
+
+    const locationPages =
+      await captureLocationPages();
+
+
+    return [
+
+      ...stationPages,
+
+      ...locationPages
+
+    ];
+
+  }
+
+
+  /* =====================================================
+     PDF HEADER
+  ===================================================== */
+
+  function drawPageHeader(
+    pdf,
+    pageInfo
+  ) {
+
+    const pageWidth =
+      pdf.internal.pageSize
+        .getWidth();
+
+
+    const stationName =
+      getStationName();
+
+
+    const version =
+      getDocumentVersion();
+
+
+    const status =
+      getCtrStatus();
+
+
+    pdf.setDrawColor(
+      70,
+      70,
+      70
+    );
+
+
+    pdf.setLineWidth(
+      0.3
+    );
+
+
+    pdf.line(
+      PAGE_MARGIN,
+      PAGE_MARGIN +
+        HEADER_HEIGHT,
+      pageWidth -
+        PAGE_MARGIN,
+      PAGE_MARGIN +
+        HEADER_HEIGHT
+    );
+
+
+    pdf.setTextColor(
+      20,
+      20,
+      20
+    );
+
+
+    pdf.setFont(
+      "helvetica",
+      "bold"
+    );
+
+
+    pdf.setFontSize(
+      12
+    );
+
+
+    pdf.text(
+      stationName,
+      PAGE_MARGIN,
+      PAGE_MARGIN + 5
+    );
+
+
+    pdf.setFontSize(
+      9
+    );
+
+
+    pdf.text(
+      pageInfo.title,
+      PAGE_MARGIN,
+      PAGE_MARGIN + 10
+    );
+
+
+    pdf.setFont(
+      "helvetica",
+      "normal"
+    );
+
+
+    pdf.setFontSize(
+      8
+    );
+
+
+    const rightText =
+      `${version}  |  ${status}`;
+
+
+    pdf.text(
+      rightText,
+      pageWidth -
+        PAGE_MARGIN,
+      PAGE_MARGIN + 5,
+      {
+        align:
+          "right"
+      }
+    );
+
+
+    pdf.text(
+      formatDateTime(),
+      pageWidth -
+        PAGE_MARGIN,
+      PAGE_MARGIN + 10,
+      {
+        align:
+          "right"
+      }
+    );
+
+  }
+
+
+  /* =====================================================
+     PDF DRAWING
+  ===================================================== */
+
+  async function drawSvgOnPage(
+    pdf,
+    pageInfo
+  ) {
+
+    drawPageHeader(
+      pdf,
+      pageInfo
+    );
+
+
+    const image =
+      await svgToPng(
+        pageInfo.svg
       );
 
 
-      const doc =
-        writer.doc;
+    const pageWidth =
+      pdf.internal.pageSize
+        .getWidth();
 
 
-      doc.setFont(
-        "helvetica",
-        "normal"
+    const pageHeight =
+      pdf.internal.pageSize
+        .getHeight();
+
+
+    const availableWidth =
+      pageWidth -
+      (
+        PAGE_MARGIN *
+        2
       );
 
 
-      doc.setFontSize(
-        8
-      );
+    const drawingTop =
+      PAGE_MARGIN +
+      HEADER_HEIGHT +
+      4;
 
 
-      doc.text(
-
-        "No Connected Ends configured.",
-
-        12,
-
-        writer.y + 3
-
-      );
+    const drawingBottom =
+      pageHeight -
+      PAGE_MARGIN -
+      FOOTER_HEIGHT;
 
 
-      writer.move(
-        10
-      );
+    const availableHeight =
+      drawingBottom -
+      drawingTop;
+
+
+    const imageRatio =
+      image.width /
+      image.height;
+
+
+    const areaRatio =
+      availableWidth /
+      availableHeight;
+
+
+    let drawWidth;
+
+    let drawHeight;
+
+
+    if (
+      imageRatio >
+      areaRatio
+    ) {
+
+      drawWidth =
+        availableWidth;
+
+
+      drawHeight =
+        drawWidth /
+        imageRatio;
 
     }
 
     else {
 
-      ends.forEach(
-        function (
-          end,
-          index
-        ) {
+      drawHeight =
+        availableHeight;
 
-          writer.drawConnectedEnd(
 
-            end,
-
-            index
-
-          );
-
-        }
-      );
+      drawWidth =
+        drawHeight *
+        imageRatio;
 
     }
 
 
-    /* =====================================================
-       CONTROL INFO
-    ===================================================== */
-
-    writer.drawControlledInfo();
-
-
-    const doc =
-      writer.finish();
+    const x =
+      (
+        pageWidth -
+        drawWidth
+      ) / 2;
 
 
-    /* =====================================================
-       PDF METADATA
-    ===================================================== */
-
-    doc.setProperties({
-
-      title:
-        `${
-          displayText(
-            source?.station?.name ||
-            source?.station?.station_name,
-            "Station"
-          )
-        } - ${
-          displayText(
-            source?.record_name,
-            "Initial CTR"
-          )
-        }`,
-
-      subject:
-        "Controlled CTR Engineering Drawing",
-
-      author:
-        "CTR Management System",
-
-      creator:
-        "CTR Management System"
-
-    });
+    const y =
+      drawingTop +
+      (
+        availableHeight -
+        drawHeight
+      ) / 2;
 
 
-    return doc;
+    pdf.addImage(
+      image.dataUrl,
+      "PNG",
+      x,
+      y,
+      drawWidth,
+      drawHeight,
+      undefined,
+      "FAST"
+    );
 
   }
 
 
-  /* =========================================================
-     VALIDATE GENERATED PDF
-  ========================================================= */
+  /* =====================================================
+     PAGE FOOTER
+  ===================================================== */
 
-  function validatePdfArrayBuffer(
-    arrayBuffer
+  function drawPageFooter(
+    pdf,
+    pageNumber,
+    totalPages
   ) {
 
-    if (
-      !(
-        arrayBuffer
-        instanceof
-        ArrayBuffer
-      )
-    ) {
-
-      throw new Error(
-        "Generated PDF data is invalid."
-      );
-
-    }
+    const pageWidth =
+      pdf.internal.pageSize
+        .getWidth();
 
 
-    if (
-      arrayBuffer.byteLength <
-      5
-    ) {
-
-      throw new Error(
-        "Generated PDF is empty."
-      );
-
-    }
+    const pageHeight =
+      pdf.internal.pageSize
+        .getHeight();
 
 
-    if (
-      arrayBuffer.byteLength >
-      MAX_FILE_SIZE
-    ) {
-
-      throw new Error(
-        "Generated PDF exceeds the 25 MB storage limit."
-      );
-
-    }
+    const lineY =
+      pageHeight -
+      PAGE_MARGIN -
+      FOOTER_HEIGHT +
+      2;
 
 
-    const headerBytes =
-      new Uint8Array(
-
-        arrayBuffer.slice(
-          0,
-          5
-        )
-
-      );
+    pdf.setDrawColor(
+      100,
+      100,
+      100
+    );
 
 
-    const header =
-      String.fromCharCode(
-        ...headerBytes
-      );
+    pdf.setLineWidth(
+      0.25
+    );
 
 
-    if (
-      header !==
-      "%PDF-"
-    ) {
-
-      throw new Error(
-        "Generated file is not a valid PDF document."
-      );
-
-    }
-
-  }
+    pdf.line(
+      PAGE_MARGIN,
+      lineY,
+      pageWidth -
+        PAGE_MARGIN,
+      lineY
+    );
 
 
-  /* =========================================================
-     CHECK EXISTING STORAGE FILE
-  ========================================================= */
-
-  async function storageFileExists(
-    client,
-    folder,
-    fileName
-  ) {
-
-    const {
-      data,
-      error
-    } =
-      await client.storage
-        .from(
-          STORAGE_BUCKET
-        )
-        .list(
-          folder,
-          {
-
-            limit:
-              100,
-
-            search:
-              fileName
-
-          }
-        );
+    pdf.setFont(
+      "helvetica",
+      "normal"
+    );
 
 
-    if (error) {
-
-      throw error;
-
-    }
+    pdf.setFontSize(
+      7.5
+    );
 
 
-    return safeArray(
-      data
-    ).some(
-      function (item) {
+    pdf.setTextColor(
+      70,
+      70,
+      70
+    );
 
-        return (
-          item?.name ===
-          fileName
-        );
 
+    pdf.text(
+      "CTR Management - Engineering Drawing",
+      PAGE_MARGIN,
+      pageHeight -
+        PAGE_MARGIN -
+        2
+    );
+
+
+    pdf.setFont(
+      "helvetica",
+      "bold"
+    );
+
+
+    pdf.text(
+      "DRAFT / CONTROLLED COPY",
+      pageWidth / 2,
+      pageHeight -
+        PAGE_MARGIN -
+        2,
+      {
+        align:
+          "center"
+      }
+    );
+
+
+    pdf.setFont(
+      "helvetica",
+      "normal"
+    );
+
+
+    pdf.text(
+      `Page ${pageNumber} of ${totalPages}`,
+      pageWidth -
+        PAGE_MARGIN,
+      pageHeight -
+        PAGE_MARGIN -
+        2,
+      {
+        align:
+          "right"
       }
     );
 
   }
 
 
-  /* =========================================================
-     UPLOAD GENERATED PDF
-  ========================================================= */
+  /* =====================================================
+     FILE NAME
+  ===================================================== */
 
-  async function uploadGeneratedPdf(
-    client,
-    workflowId,
-    hash,
-    blob
-  ) {
+  function buildFileName() {
 
-    const folder =
-      `${workflowId}/generated`;
-
-
-    const fileName =
-      `${hash}.pdf`;
-
-
-    const storagePath =
-      `${folder}/${fileName}`;
-
-
-    const exists =
-      await storageFileExists(
-
-        client,
-
-        folder,
-
-        fileName
-
+    const station =
+      safeFileName(
+        getStationName()
       );
 
 
-    if (exists) {
-
-      return storagePath;
-
-    }
-
-
-    const {
-      error
-    } =
-      await client.storage
-        .from(
-          STORAGE_BUCKET
-        )
-        .upload(
-          storagePath,
-          blob,
-          {
-
-            contentType:
-              "application/pdf",
-
-            cacheControl:
-              "3600",
-
-            upsert:
-              false
-
-          }
-        );
+    const version =
+      safeFileName(
+        getDocumentVersion()
+      );
 
 
-    if (error) {
-
-      const message =
-        cleanText(
-          error.message
-        ).toLowerCase();
-
-
-      const duplicate =
-
-        message.includes(
-          "already exists"
-        ) ||
-
-        message.includes(
-          "duplicate"
-        );
-
-
-      if (
-        !duplicate
-      ) {
-
-        throw error;
-
-      }
-
-    }
-
-
-    return storagePath;
+    return (
+      `${station}_CTR_${version}.pdf`
+    );
 
   }
 
 
-  /* =========================================================
-     REGISTER GENERATED PDF
-  ========================================================= */
+  /* =====================================================
+     GENERATE BLOB
+  ===================================================== */
 
-  async function registerGeneratedPdf(
-    client,
-    workflowId,
-    storagePath,
-    hash
-  ) {
-
-    const {
-      data,
-      error
-    } =
-      await client.rpc(
-        "register_ctr_generated_pdf",
-        {
-
-          p_workflow_id:
-            workflowId,
-
-          p_storage_path:
-            storagePath,
-
-          p_document_sha256:
-            hash
-
-        }
-      );
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    return data;
-
-  }
-
-
-  /* =========================================================
-     GENERATE CONTROLLED PDF
-  ========================================================= */
-
-  async function generateControlledPdf(
-    button
-  ) {
+  async function generatePdfBlob() {
 
     if (
-      generatorBusy
+      pdfBusy
     ) {
 
-      return;
-
-    }
-
-
-    const workflowId =
-      getWorkflowId();
-
-
-    if (
-      !workflowId
-    ) {
-
-      showGeneratorStatus(
-        "Workflow ID is missing.",
-        "error"
+      throw new Error(
+        "PDF generation is already running."
       );
 
-
-      return;
-
     }
 
 
-    generatorBusy =
+    pdfBusy =
       true;
 
 
-    const originalText =
-      button?.textContent ||
-      "Generate Controlled PDF";
+    updateButtonState();
 
 
-    if (button) {
-
-      button.disabled =
-        true;
-
-
-      button.textContent =
-        "Generating PDF...";
-
-    }
-
-
-    showGeneratorStatus(
-
-      "Loading the latest controlled CTR draft...",
-
-      "info"
-
+    setPdfStatus(
+      "Preparing CTR drawings..."
     );
 
 
     try {
 
-      const client =
-        getSupabaseClient();
+      const JsPdf =
+        requirePdfLibrary();
 
 
-      /*
-        IMPORTANT:
-        Source is loaded again immediately before generation,
-        so stale draft data is not used.
-      */
-
-      const source =
-        await loadPdfSource(
-          workflowId
-        );
+      const pages =
+        await collectDrawingPages();
 
 
       if (
-        source?.can_generate_pdf ===
-        false
+        pages.length ===
+        0
       ) {
 
         throw new Error(
-          "This workflow is not currently eligible for controlled PDF generation."
+          "No CTR drawing is available for PDF generation."
         );
 
       }
 
 
-      const jsPDF =
-        await loadJsPdf();
-
-
-      showGeneratorStatus(
-
-        "Creating engineering drawing PDF...",
-
-        "info"
-
+      setPdfStatus(
+        `Generating ${pages.length} PDF page(s)...`
       );
 
 
       const pdf =
-        buildControlledPdf(
+        new JsPdf(
+          {
 
-          jsPDF,
+            orientation:
+              PAGE_ORIENTATION,
 
-          source
+            unit:
+              "mm",
 
+            format:
+              PAGE_FORMAT,
+
+            compress:
+              true,
+
+            putOnlyUsedFonts:
+              true
+
+          }
         );
 
 
-      const arrayBuffer =
-        pdf.output(
-          "arraybuffer"
+      for (
+        let index = 0;
+        index < pages.length;
+        index++
+      ) {
+
+        if (
+          index > 0
+        ) {
+
+          pdf.addPage(
+            PAGE_FORMAT,
+            PAGE_ORIENTATION
+          );
+
+        }
+
+
+        setPdfStatus(
+          `Rendering PDF page ${index + 1} of ${pages.length}...`
         );
 
 
-      validatePdfArrayBuffer(
-        arrayBuffer
-      );
-
-
-      const hash =
-        await sha256Hex(
-          arrayBuffer
+        await drawSvgOnPage(
+          pdf,
+          pages[index]
         );
+
+      }
+
+
+      /*
+         Add final page numbers only after total count is known.
+      */
+
+      for (
+        let pageIndex = 1;
+        pageIndex <= pages.length;
+        pageIndex++
+      ) {
+
+        pdf.setPage(
+          pageIndex
+        );
+
+
+        drawPageFooter(
+          pdf,
+          pageIndex,
+          pages.length
+        );
+
+      }
 
 
       const blob =
-        new Blob(
-
-          [
-            arrayBuffer
-          ],
-
-          {
-            type:
-              "application/pdf"
-          }
-
+        pdf.output(
+          "blob"
         );
 
 
-      showGeneratorStatus(
-
-        "Uploading controlled PDF...",
-
-        "info"
-
-      );
+      const fileName =
+        buildFileName();
 
 
-      const storagePath =
-        await uploadGeneratedPdf(
-
-          client,
-
-          workflowId,
-
-          hash,
-
-          blob
-
-        );
+      lastGeneratedPdf =
+        blob;
 
 
-      showGeneratorStatus(
-
-        "Registering controlled document...",
-
-        "info"
-
-      );
+      lastGeneratedFileName =
+        fileName;
 
 
-      await registerGeneratedPdf(
-
-        client,
-
-        workflowId,
-
-        storagePath,
-
-        hash
-
-      );
+      lastGeneratedPageCount =
+        pages.length;
 
 
-      showGeneratorStatus(
-
-        "Controlled engineering drawing PDF generated successfully.",
-
+      setPdfStatus(
+        `PDF ready - ${pages.length} page(s)`,
         "success"
-
       );
 
+
+      /*
+         Later workflow/registration system can listen
+         to this event and use the SAME Blob.
+      */
 
       window.dispatchEvent(
-
         new CustomEvent(
-          "ctr-controlled-pdf-generated",
+          "ctr-pdf-generated",
           {
 
             detail: {
 
-              workflowId:
-                workflowId,
+              blob,
 
-              storagePath:
-                storagePath,
+              fileName,
 
-              documentSha256:
-                hash
+              pageCount:
+                pages.length,
+
+              stationName:
+                getStationName(),
+
+              version:
+                getDocumentVersion(),
+
+              generatedAt:
+                new Date()
+                  .toISOString()
 
             }
 
           }
         )
-
       );
 
 
-      setTimeout(
-        function () {
+      return {
 
-          window.location.reload();
+        blob,
 
-        },
-        700
-      );
+        fileName,
+
+        pageCount:
+          pages.length
+
+      };
 
     }
 
     catch (error) {
 
       console.error(
-
-        "Controlled PDF generation error:",
-
+        "CTR PDF generation error:",
         error
-
       );
 
 
-      showGeneratorStatus(
-
+      setPdfStatus(
         error?.message ||
-
-        "Controlled PDF could not be generated.",
-
+        "PDF generation failed.",
         "error"
-
       );
 
 
-      if (button) {
-
-        button.disabled =
-          false;
-
-
-        button.textContent =
-          originalText;
-
-      }
+      throw error;
 
     }
 
     finally {
 
-      generatorBusy =
+      pdfBusy =
         false;
 
+
+      updateButtonState();
+
     }
 
   }
 
 
-  /* =========================================================
-     FIND BUTTON HOST
-  ========================================================= */
+  /* =====================================================
+     DOWNLOAD
+  ===================================================== */
 
-  function findGeneratorHost() {
+  async function downloadPdf() {
 
-    return (
+    try {
 
-      document.getElementById(
-        "currentDocumentActions"
-      ) ||
-
-      document.querySelector(
-        "[data-current-document-actions]"
-      ) ||
-
-      document.querySelector(
-        ".current-document-actions"
-      ) ||
-
-      document.querySelector(
-        ".document-actions"
-      ) ||
-
-      document.querySelector(
-        ".current-pdf-actions"
-      ) ||
-
-      document.querySelector(
-        ".pdf-actions"
-      )
-
-    );
-
-  }
+      const result =
+        await generatePdfBlob();
 
 
-  /* =========================================================
-     FALLBACK BUTTON LOCATION
-  ========================================================= */
-
-  function findFallbackActionButton() {
-
-    const candidates =
-      Array.from(
-
-        document.querySelectorAll(
-          "button, a"
-        )
-
-      );
-
-
-    return candidates.find(
-      function (element) {
-
-        const label =
-          cleanText(
-            element.textContent
-          ).toLowerCase();
-
-
-        return (
-
-          label.includes(
-            "open current pdf"
-          ) ||
-
-          label.includes(
-            "download for digital signing"
-          ) ||
-
-          label.includes(
-            "download current pdf"
-          )
-
+      const objectUrl =
+        URL.createObjectURL(
+          result.blob
         );
 
-      }
-    ) || null;
 
-  }
-
-
-  /* =========================================================
-     ENSURE GENERATE BUTTON
-  ========================================================= */
-
-  function ensureGeneratorButton(
-    source
-  ) {
-
-    let button =
-      document.getElementById(
-        "generateControlledCtrPdf"
-      );
-
-
-    if (!button) {
-
-      button =
+      const link =
         document.createElement(
-          "button"
+          "a"
         );
 
 
-      button.type =
-        "button";
+      link.href =
+        objectUrl;
 
 
-      button.id =
-        "generateControlledCtrPdf";
+      link.download =
+        result.fileName;
 
 
-      button.className =
-        "primary-action builder-action-btn";
+      link.rel =
+        "noopener";
 
 
-      const host =
-        findGeneratorHost();
+      document.body.appendChild(
+        link
+      );
 
 
-      if (host) {
-
-        host.appendChild(
-          button
-        );
-
-      }
-
-      else {
-
-        const fallbackButton =
-          findFallbackActionButton();
+      link.click();
 
 
-        if (
-          fallbackButton
-            ?.parentElement
-        ) {
-
-          fallbackButton
-            .parentElement
-            .appendChild(
-              button
-            );
-
-        }
-
-        else {
-
-          const fallbackHost =
-
-            document.querySelector(
-              ".page-content"
-            ) ||
-
-            document.querySelector(
-              "main"
-            ) ||
-
-            document.body;
+      link.remove();
 
 
-          const wrapper =
-            document.createElement(
-              "div"
-            );
-
-
-          wrapper.style.margin =
-            "14px 0";
-
-
-          wrapper.appendChild(
-            button
-          );
-
-
-          fallbackHost.appendChild(
-            wrapper
-          );
-
-        }
-
-      }
-
-    }
-
-
-    const isRegeneration =
-
-      source?.document_state ===
-        "REGENERATED_AFTER_CORRECTION" ||
-
-      !!source
-        ?.current_document_id;
-
-
-    button.textContent =
-
-      isRegeneration
-
-        ? "Regenerate Controlled PDF"
-
-        : "Generate Controlled PDF";
-
-
-    button.disabled =
-      false;
-
-
-    if (
-      !button.dataset
-        .ctrPdfBound
-    ) {
-
-      button.dataset.ctrPdfBound =
-        "true";
-
-
-      button.addEventListener(
-        "click",
+      window.setTimeout(
         function () {
 
-          generateControlledPdf(
-            button
+          URL.revokeObjectURL(
+            objectUrl
           );
 
-        }
+        },
+        3000
+      );
+
+
+      setPdfStatus(
+        "CTR PDF downloaded successfully.",
+        "success"
       );
 
     }
 
+    catch (error) {
 
-    return button;
+      alert(
+        error?.message ||
+        "CTR PDF could not be generated."
+      );
+
+    }
 
   }
 
 
-  /* =========================================================
-     INITIALIZE GENERATOR
-  ========================================================= */
+  /* =====================================================
+     BUTTON
+  ===================================================== */
 
-  async function initializeGenerator() {
-
-    const workflowId =
-      getWorkflowId();
-
+  function createPdfButton() {
 
     if (
-      !workflowId
+      document.getElementById(
+        "generateCtrPdf"
+      )
     ) {
 
       return;
@@ -4107,73 +2223,159 @@
     }
 
 
-    try {
-
-      const source =
-        await loadPdfSource(
-          workflowId
-        );
-
-
-      if (
-        source?.can_generate_pdf ===
-        false
-      ) {
-
-        return;
-
-      }
-
-
-      ensureGeneratorButton(
-        source
+    const actions =
+      document.querySelector(
+        ".ctr-save-actions"
       );
+
+
+    if (!actions) {
+
+      return;
 
     }
 
-    catch (error) {
 
-      console.info(
-
-        "Controlled PDF generator unavailable for this workflow state:",
-
-        error?.message ||
-        error
-
+    const button =
+      document.createElement(
+        "button"
       );
 
-    }
+
+    button.type =
+      "button";
+
+
+    button.id =
+      "generateCtrPdf";
+
+
+    button.className =
+      "secondary-action";
+
+
+    button.textContent =
+      "Generate CTR PDF";
+
+
+    button.addEventListener(
+      "click",
+      downloadPdf
+    );
+
+
+    actions.insertBefore(
+      button,
+      actions.firstChild
+    );
 
   }
 
 
-  /* =========================================================
-     OPTIONAL GLOBAL ACCESS
-  ========================================================= */
+  function updateButtonState() {
 
-  window.CTRControlledPdfGenerator = {
-
-    generate:
-      function () {
-
-        const button =
-          document.getElementById(
-            "generateControlledCtrPdf"
-          );
+    const button =
+      document.getElementById(
+        "generateCtrPdf"
+      );
 
 
-        return generateControlledPdf(
-          button
-        );
+    if (!button) {
 
-      }
+      return;
 
-  };
+    }
 
 
-  /* =========================================================
-     START
-  ========================================================= */
+    button.disabled =
+      pdfBusy;
+
+
+    button.textContent =
+      pdfBusy
+
+        ? "Generating PDF..."
+
+        : "Generate CTR PDF";
+
+  }
+
+
+  /* =====================================================
+     INITIALIZE
+  ===================================================== */
+
+  function initialize() {
+
+    /*
+       This script is also referenced by the Digital Signing
+       page. Button should only appear on station page.
+    */
+
+    if (
+      document.querySelector(
+        ".ctr-save-actions"
+      )
+    ) {
+
+      createPdfButton();
+
+      ensurePdfStatus();
+
+    }
+
+
+    window.CTR_PDF_GENERATOR = {
+
+      version:
+        VERSION,
+
+
+      generateBlob:
+        generatePdfBlob,
+
+
+      download:
+        downloadPdf,
+
+
+      getLastGenerated:
+        function () {
+
+          return {
+
+            blob:
+              lastGeneratedPdf,
+
+            fileName:
+              lastGeneratedFileName,
+
+            pageCount:
+              lastGeneratedPageCount
+
+          };
+
+        },
+
+
+      isBusy:
+        function () {
+
+          return pdfBusy;
+
+        }
+
+    };
+
+
+    console.log(
+      "CTR PDF Generator:",
+      VERSION,
+      "ready"
+    );
+
+  }
+
 
   if (
     document.readyState ===
@@ -4182,24 +2384,14 @@
 
     document.addEventListener(
       "DOMContentLoaded",
-      function () {
-
-        setTimeout(
-          initializeGenerator,
-          300
-        );
-
-      }
+      initialize
     );
 
   }
 
   else {
 
-    setTimeout(
-      initializeGenerator,
-      300
-    );
+    initialize();
 
   }
 

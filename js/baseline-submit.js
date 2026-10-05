@@ -509,6 +509,419 @@
 
   }
 
+    /* =====================================================
+     INITIAL CTR CONTROLLED PDF
+  ===================================================== */
+
+  const WORKFLOW_STORAGE_BUCKET =
+    "ctr-workflow-documents";
+
+
+  async function calculatePdfSha256(
+    pdfBlob
+  ) {
+
+    const buffer =
+      await pdfBlob.arrayBuffer();
+
+
+    const hashBuffer =
+      await crypto.subtle.digest(
+        "SHA-256",
+        buffer
+      );
+
+
+    const hashArray =
+      Array.from(
+        new Uint8Array(
+          hashBuffer
+        )
+      );
+
+
+    return hashArray
+      .map(
+        function (byte) {
+
+          return byte
+            .toString(16)
+            .padStart(
+              2,
+              "0"
+            );
+
+        }
+      )
+      .join("");
+
+  }
+
+
+  function buildGeneratedPdfStoragePath(
+    workflowId,
+    documentSha256
+  ) {
+
+    return (
+      workflowId +
+      "/generated/" +
+      documentSha256 +
+      ".pdf"
+    );
+
+  }
+
+
+  async function generatedPdfExists(
+    client,
+    storagePath
+  ) {
+
+    const slashIndex =
+      storagePath.lastIndexOf(
+        "/"
+      );
+
+
+    const folder =
+      storagePath.substring(
+        0,
+        slashIndex
+      );
+
+
+    const filename =
+      storagePath.substring(
+        slashIndex + 1
+      );
+
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .storage
+        .from(
+          WORKFLOW_STORAGE_BUCKET
+        )
+        .list(
+          folder,
+          {
+            search:
+              filename,
+
+            limit:
+              10
+          }
+        );
+
+
+    if (error) {
+
+      return false;
+
+    }
+
+
+    return (
+      Array.isArray(
+        data
+      ) &&
+      data.some(
+        function (item) {
+
+          return (
+            item.name ===
+            filename
+          );
+
+        }
+      )
+    );
+
+  }
+
+
+  async function uploadGeneratedInitialCtrPdf(
+    client,
+    workflowId,
+    pdfBlob,
+    documentSha256
+  ) {
+
+    const storagePath =
+      buildGeneratedPdfStoragePath(
+        workflowId,
+        documentSha256
+      );
+
+
+    const {
+      error
+    } =
+      await client
+        .storage
+        .from(
+          WORKFLOW_STORAGE_BUCKET
+        )
+        .upload(
+          storagePath,
+          pdfBlob,
+          {
+            contentType:
+              "application/pdf",
+
+            cacheControl:
+              "3600",
+
+            upsert:
+              false
+          }
+        );
+
+
+    if (!error) {
+
+      return storagePath;
+
+    }
+
+
+    /*
+       Retry-safe behavior.
+
+       If upload succeeded previously but registration
+       failed afterwards, same immutable PDF may already
+       exist in storage.
+    */
+
+    const exists =
+      await generatedPdfExists(
+        client,
+        storagePath
+      );
+
+
+    if (exists) {
+
+      return storagePath;
+
+    }
+
+
+    throw error;
+
+  }
+
+
+  async function registerGeneratedInitialCtrPdf(
+    client,
+    workflowId,
+    storagePath,
+    documentSha256
+  ) {
+
+    const {
+      data,
+      error
+    } =
+      await client.rpc(
+        "register_ctr_generated_pdf",
+        {
+
+          p_workflow_id:
+            workflowId,
+
+          p_storage_path:
+            storagePath,
+
+          p_document_sha256:
+            documentSha256
+
+        }
+      );
+
+
+    if (error) {
+
+      /*
+         Exact same document may already have been
+         registered during a previous successful attempt.
+      */
+
+      const message =
+        String(
+          error.message ||
+          ""
+        );
+
+
+      if (
+        message.includes(
+          "already registered"
+        )
+      ) {
+
+        return {
+          success:
+            true,
+
+          already_registered:
+            true
+        };
+
+      }
+
+
+      throw error;
+
+    }
+
+
+    return data;
+
+  }
+
+
+  async function generateAndRegisterInitialCtrPdf(
+    client,
+    workflowId
+  ) {
+
+    if (
+      !window
+        .CTR_PDF_GENERATOR
+        ?.generateBlob
+    ) {
+
+      throw new Error(
+        "CTR PDF Generator is not available."
+      );
+
+    }
+
+
+    setWorkflowMessage(
+      "Generating Initial CTR PDF..."
+    );
+
+
+    submitButton.textContent =
+      "Generating Initial CTR PDF...";
+
+
+    const pdfResult =
+      await window
+        .CTR_PDF_GENERATOR
+        .generateBlob();
+
+
+    if (
+      !pdfResult?.blob
+    ) {
+
+      throw new Error(
+        "Initial CTR PDF could not be generated."
+      );
+
+    }
+
+
+    setWorkflowMessage(
+      "Calculating document integrity..."
+    );
+
+
+    submitButton.textContent =
+      "Checking PDF Integrity...";
+
+
+    const documentSha256 =
+      await calculatePdfSha256(
+        pdfResult.blob
+      );
+
+
+    if (
+      !documentSha256 ||
+      documentSha256.length !== 64
+    ) {
+
+      throw new Error(
+        "Initial CTR PDF SHA-256 could not be calculated."
+      );
+
+    }
+
+
+    setWorkflowMessage(
+      "Uploading Initial CTR controlled PDF..."
+    );
+
+
+    submitButton.textContent =
+      "Uploading Initial CTR PDF...";
+
+
+    const storagePath =
+      await uploadGeneratedInitialCtrPdf(
+        client,
+        workflowId,
+        pdfResult.blob,
+        documentSha256
+      );
+
+
+    setWorkflowMessage(
+      "Registering Initial CTR controlled document..."
+    );
+
+
+    submitButton.textContent =
+      "Registering Initial CTR...";
+
+
+    const registrationResult =
+      await registerGeneratedInitialCtrPdf(
+        client,
+        workflowId,
+        storagePath,
+        documentSha256
+      );
+
+
+    console.log(
+      "INITIAL CTR PDF REGISTRATION:",
+      registrationResult
+    );
+
+
+    return {
+
+      workflowId:
+        workflowId,
+
+      storagePath:
+        storagePath,
+
+      documentSha256:
+        documentSha256,
+
+      fileName:
+        pdfResult.fileName,
+
+      pageCount:
+        pdfResult.pageCount,
+
+      registration:
+        registrationResult
+
+    };
+
+  }
+
 
   /* =====================================================
      PREPARE INITIAL CTR WORKFLOW
