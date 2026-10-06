@@ -262,7 +262,7 @@ function getStatusLabel(status) {
       "Draft",
 
     BASELINE_APPROVED:
-      "Baseline Approved",
+      "Initial CTR Approved",
 
     UNDER_ALTERATION:
       "Under Alteration",

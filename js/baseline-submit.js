@@ -1132,7 +1132,7 @@
          Do NOT:
          - change station to UNDER_APPROVAL here
          - lock station builder here
-         - change draft to READY_FOR_BASELINE here
+         - change draft to READY_FOR_Initial CTR here
 
          Those actions happen only when the preparer
          digitally signs and forwards the first controlled

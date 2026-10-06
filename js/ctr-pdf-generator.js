@@ -290,14 +290,35 @@
 
   function getDocumentVersion() {
 
-    return (
-      getSummaryValue(
-        "Current Version"
-      ) ||
-      "V0"
+  const rawVersion =
+    getSummaryValue(
+      "Current Version"
     );
 
+
+  const normalized =
+    String(
+      rawVersion || ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  if (
+    !normalized ||
+    normalized === "V0" ||
+    normalized === "0" ||
+    normalized === "INITIAL"
+  ) {
+
+    return "Initial CTR";
+
   }
+
+
+  return rawVersion;
+
+}
 
 
   function getCtrStatus() {
@@ -1866,23 +1887,35 @@
 
   function buildFileName() {
 
-    const station =
-      safeFileName(
-        getStationName()
-      );
+  const station =
+    safeFileName(
+      getStationName()
+    );
 
 
-    const version =
-      safeFileName(
-        getDocumentVersion()
-      );
+  const version =
+    getDocumentVersion();
 
+
+  if (
+    String(version)
+      .trim()
+      .toUpperCase() ===
+    "INITIAL CTR"
+  ) {
 
     return (
-      `${station}_CTR_${version}.pdf`
+      `${station}_Initial_CTR.pdf`
     );
 
   }
+
+
+  return (
+    `${station}_CTR_${safeFileName(version)}.pdf`
+  );
+
+}
 
 
   /* =====================================================

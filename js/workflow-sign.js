@@ -636,7 +636,7 @@
       "GENERATED"
     ) {
 
-      return "Generated CTR PDF";
+      return "Initial CTR PDF";
 
     }
 

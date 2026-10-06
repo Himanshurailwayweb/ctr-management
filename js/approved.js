@@ -24,6 +24,12 @@
      ELEMENTS
   ===================================================== */
 
+    const APPROVED_PDF_BUCKET =
+    "ctr-workflow-documents";
+
+  const APPROVED_PDF_URL_LIFETIME =
+    120;
+
   const approvedCtrList =
     document.getElementById(
       "approvedCtrList"
@@ -185,7 +191,75 @@
     );
 
   }
+  
+  function getCtrDisplayName(record) {
 
+    const versionNumber =
+      Number(
+        record?.version_number
+      ) || 1;
+
+
+    if (
+      versionNumber <= 1
+    ) {
+
+      return "Initial CTR";
+
+    }
+
+
+    return (
+      "V" +
+      String(
+        versionNumber - 1
+      )
+    );
+
+  }
+
+
+  function getApprovedPdfFileName(record) {
+
+    const stationCode =
+      String(
+        record?.station_code ||
+        "STATION"
+      )
+        .trim()
+        .replace(
+          /[^a-zA-Z0-9_-]/g,
+          "_"
+        );
+
+
+    const displayName =
+      getCtrDisplayName(
+        record
+      );
+
+
+    if (
+      displayName ===
+      "Initial CTR"
+    ) {
+
+      return (
+        stationCode +
+        "_Initial_CTR.pdf"
+      );
+
+    }
+
+
+    return (
+      stationCode +
+      "_CTR_" +
+      displayName +
+      ".pdf"
+    );
+
+  }
 
   /* =====================================================
      STATUS MESSAGE
@@ -459,7 +533,7 @@
      PDF ACTION
   ===================================================== */
 
-  function getPdfAction(record) {
+   function getPdfAction(record) {
 
     const pdfPath =
       displayValue(
@@ -471,65 +545,79 @@
     if (!pdfPath) {
 
       return `
-
         <span class="disabled-action">
-
           PDF Pending
-
         </span>
-
       `;
 
     }
 
 
+    const safePath =
+      escapeHtml(
+        pdfPath
+      );
+
+
+    const fileName =
+      escapeHtml(
+        getApprovedPdfFileName(
+          record
+        )
+      );
+
+
     /*
-       If a full URL has already been saved,
-       it can be opened directly.
+       Older/external full URL.
     */
 
     if (
-      pdfPath.startsWith("http://") ||
-      pdfPath.startsWith("https://")
+      pdfPath.startsWith(
+        "http://"
+      ) ||
+      pdfPath.startsWith(
+        "https://"
+      )
     ) {
 
       return `
-
         <a
-          href="${escapeHtml(pdfPath)}"
+          href="${safePath}"
           target="_blank"
           rel="noopener noreferrer"
         >
-
           Open PDF
-
         </a>
-
       `;
 
     }
 
 
     /*
-       Supabase Storage path handling will be added
-       with the final PDF workflow.
+       Private Supabase Storage object.
     */
 
     return `
-
-      <span
-        class="disabled-action"
-        title="Final PDF storage connection will be handled by the PDF workflow."
+      <a
+        href="#"
+        data-approved-pdf-action="open"
+        data-pdf-path="${safePath}"
+        data-file-name="${fileName}"
       >
+        Open PDF
+      </a>
 
-        PDF Stored
-
-      </span>
-
+      <a
+        href="#"
+        data-approved-pdf-action="download"
+        data-pdf-path="${safePath}"
+        data-file-name="${fileName}"
+      >
+        Download
+      </a>
     `;
 
   }
-
 
   /* =====================================================
      REGISTER
@@ -611,11 +699,10 @@
             );
 
 
-          const currentRecord =
+           const currentRecord =
             escapeHtml(
-              displayValue(
-                record.display_name,
-                "Approved CTR"
+              getCtrDisplayName(
+                record
               )
             );
 
@@ -727,8 +814,8 @@
 
                   ${
                     versionNumber === 1
-                      ? "Initial approved station CTR"
-                      : "Final approved modification"
+                    ? "Initial approved station CTR"
+                   : `Approved CTR Version V${versionNumber - 1}`
                   }
 
                 </span>
@@ -1024,6 +1111,242 @@
 
   }
 
+ 
+    async function createApprovedPdfSignedUrl(
+    storagePath,
+    downloadFileName = ""
+  ) {
+
+    const client =
+      await waitForSupabaseClient();
+
+
+    if (!client) {
+
+      throw new Error(
+        "Supabase connection is not available."
+      );
+
+    }
+
+
+    const options =
+      downloadFileName
+        ? {
+            download:
+              downloadFileName
+          }
+        : undefined;
+
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .storage
+        .from(
+          APPROVED_PDF_BUCKET
+        )
+        .createSignedUrl(
+          storagePath,
+          APPROVED_PDF_URL_LIFETIME,
+          options
+        );
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    if (
+      !data?.signedUrl
+    ) {
+
+      throw new Error(
+        "Approved PDF access link could not be created."
+      );
+
+    }
+
+
+    return data.signedUrl;
+
+  }
+
+
+  async function handleApprovedPdfAction(
+    event
+  ) {
+
+    const actionElement =
+      event.target.closest(
+        "[data-approved-pdf-action]"
+      );
+
+
+    if (!actionElement) {
+
+      return;
+
+    }
+
+
+    event.preventDefault();
+
+
+    const action =
+      actionElement.dataset
+        .approvedPdfAction;
+
+
+    const storagePath =
+      String(
+        actionElement.dataset
+          .pdfPath || ""
+      ).trim();
+
+
+    const fileName =
+      String(
+        actionElement.dataset
+          .fileName ||
+        "Approved_CTR.pdf"
+      ).trim();
+
+
+    if (!storagePath) {
+
+      return;
+
+    }
+
+
+    let previewWindow =
+      null;
+
+
+    if (
+      action === "open"
+    ) {
+
+      previewWindow =
+        window.open(
+          "about:blank",
+          "_blank"
+        );
+
+
+      if (previewWindow) {
+
+        previewWindow.opener =
+          null;
+
+      }
+
+    }
+
+
+    try {
+
+      showStatus(
+        action === "download"
+          ? "Preparing approved PDF download..."
+          : "Opening approved PDF..."
+      );
+
+
+      const signedUrl =
+        await createApprovedPdfSignedUrl(
+          storagePath,
+          action === "download"
+            ? fileName
+            : ""
+        );
+
+
+      if (
+        action === "open"
+      ) {
+
+        if (previewWindow) {
+
+          previewWindow.location.href =
+            signedUrl;
+
+        }
+
+        else {
+
+          window.open(
+            signedUrl,
+            "_blank",
+            "noopener,noreferrer"
+          );
+
+        }
+
+      }
+
+      else {
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+
+        link.href =
+          signedUrl;
+
+        link.rel =
+          "noopener";
+
+        document.body.appendChild(
+          link
+        );
+
+        link.click();
+
+        link.remove();
+
+      }
+
+
+      hideStatus();
+
+    }
+
+    catch (error) {
+
+      if (
+        previewWindow &&
+        !previewWindow.closed
+      ) {
+
+        previewWindow.close();
+
+      }
+
+
+      console.error(
+        "Approved CTR PDF error:",
+        error
+      );
+
+
+      showStatus(
+        error?.message ||
+        "Approved CTR PDF could not be opened.",
+        "error"
+      );
+
+    }
+
+  }
 
   /* =====================================================
      LOAD APPROVED CTR
@@ -1151,6 +1474,16 @@
   /* =====================================================
      EVENTS
   ===================================================== */
+
+    if (approvedCtrList) {
+
+    approvedCtrList.addEventListener(
+      "click",
+      handleApprovedPdfAction
+    );
+
+  }
+  
 
   if (approvedCtrSearch) {
 
