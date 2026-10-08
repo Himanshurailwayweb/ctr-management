@@ -814,6 +814,24 @@ function showAuditTrail() {
 
 }
 
+ requestAnimationFrame(function () {
+
+  const resultsSection =
+    document.getElementById(
+      "historyResultsSection"
+    );
+
+  if (resultsSection) {
+
+    resultsSection.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  }
+
+});
+
 function getHistoryRecordTimestamp(
   wrappedRecord
 ) {

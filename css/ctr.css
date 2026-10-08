@@ -4764,3 +4764,68 @@ body[data-station-edit-mode="view"]
 .ctr-open-btn {
   display: inline-flex !important;
 }
+/* =========================================================
+   HISTORY SEARCH
+========================================================= */
+
+#historySearch {
+  width: 360px;
+  max-width: 100%;
+  height: 42px;
+
+  padding: 0 14px;
+
+  border: 1px solid #c8d5e3;
+  border-radius: 6px;
+
+  background: #ffffff;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0b2f5b;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+
+#historySearch::placeholder {
+  color: #8191a5;
+  font-weight: 400;
+}
+
+
+#historySearch:hover {
+  border-color: #9fb5cd;
+}
+
+
+#historySearch:focus {
+  border-color: #1d5fa7;
+
+  box-shadow:
+    0 0 0 3px rgba(29, 95, 167, 0.10);
+
+  background: #ffffff;
+}
+
+
+/* TOTAL RECORDS */
+
+.station-count {
+  margin-top: 8px;
+
+  font-size: 13px;
+  color: #536b85;
+}
+
+
+.station-count strong {
+  color: #0b2f5b;
+  font-weight: 700;
+}
