@@ -867,7 +867,7 @@
 
                   <a
                     class="open-ctr-action"
-                    href="station.html?id=${stationId}"
+                    href="approved-view.html?station=${encodeURIComponent(stationId)}&version=${encodeURIComponent(versionNumber)}"
                     title="Open CTR"
                   >
 
@@ -1525,6 +1525,471 @@
     loadApprovedCtr();
 
   }
+  /* =========================================================
+   APPROVED SNAPSHOT -> EXISTING PDF GENERATOR ADAPTER
+========================================================= */
 
+function setupApprovedPdfCompatibility() {
+
+  const drawing =
+    getDrawingData();
+
+
+  if (!drawing) {
+    return;
+  }
+
+
+  const stationSelect =
+    document.getElementById(
+      "stationSvgRackSelect"
+    );
+
+
+  const stationHost =
+    document.getElementById(
+      "stationSvgHost"
+    );
+
+
+  const endSelect =
+    document.getElementById(
+      "locationSvgEndSelect"
+    );
+
+
+  const boxSelect =
+    document.getElementById(
+      "locationSvgBoxSelect"
+    );
+
+
+  const locationHost =
+    document.getElementById(
+      "locationSvgHost"
+    );
+
+
+  if (
+    !stationSelect ||
+    !stationHost ||
+    !endSelect ||
+    !boxSelect ||
+    !locationHost
+  ) {
+
+    console.warn(
+      "Approved PDF compatibility elements are missing."
+    );
+
+    return;
+
+  }
+
+
+  const racks =
+    getStationRacks();
+
+
+  const ends =
+    getConnectedEnds();
+
+
+  /* =======================================================
+     STATION RACK SELECT
+  ======================================================= */
+
+  stationSelect.innerHTML =
+    "";
+
+
+  racks.forEach(
+    function (
+      rack,
+      index
+    ) {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        rack.id ||
+        `station-rack-${index}`;
+
+
+      option.textContent =
+        rack.name ||
+        `K${index + 1}`;
+
+
+      stationSelect.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  function getSelectedStationRack() {
+
+    return racks.find(
+      function (
+        rack,
+        index
+      ) {
+
+        return (
+          rack.id ||
+          `station-rack-${index}`
+        ) ===
+          stationSelect.value;
+
+      }
+    ) || racks[0] || null;
+
+  }
+
+
+  function redrawApprovedStationPdf() {
+
+    stationHost.innerHTML =
+      "";
+
+
+    const rack =
+      getSelectedStationRack();
+
+
+    if (!rack) {
+      return;
+    }
+
+
+    stationHost.appendChild(
+      createRackSvg(
+        rack
+      )
+    );
+
+  }
+
+
+  stationSelect.addEventListener(
+    "change",
+    redrawApprovedStationPdf
+  );
+
+
+  /* =======================================================
+     CONNECTED END SELECT
+  ======================================================= */
+
+  endSelect.innerHTML =
+    "";
+
+
+  ends.forEach(
+    function (
+      end,
+      index
+    ) {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        end.id ||
+        `approved-end-${index}`;
+
+
+      option.textContent =
+        end.name ||
+        `Connected End ${index + 1}`;
+
+
+      endSelect.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  function getSelectedEnd() {
+
+    return ends.find(
+      function (
+        end,
+        index
+      ) {
+
+        return (
+          end.id ||
+          `approved-end-${index}`
+        ) ===
+          endSelect.value;
+
+      }
+    ) || ends[0] || null;
+
+  }
+
+
+  /* =======================================================
+     LOCATION BOX SELECT
+  ======================================================= */
+
+  function populateApprovedLocationBoxes() {
+
+    boxSelect.innerHTML =
+      "";
+
+
+    const end =
+      getSelectedEnd();
+
+
+    const locations =
+      Array.isArray(
+        end?.locations
+      )
+        ? end.locations
+        : [];
+
+
+    locations.forEach(
+      function (
+        location,
+        index
+      ) {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+
+        option.value =
+          location.id ||
+          `approved-location-${index}`;
+
+
+        option.textContent =
+          location.name ||
+          `Location Box ${index + 1}`;
+
+
+        boxSelect.appendChild(
+          option
+        );
+
+      }
+    );
+
+
+    redrawApprovedLocationPdf();
+
+  }
+
+
+  function getSelectedLocation() {
+
+    const end =
+      getSelectedEnd();
+
+
+    const locations =
+      Array.isArray(
+        end?.locations
+      )
+        ? end.locations
+        : [];
+
+
+    return locations.find(
+      function (
+        location,
+        index
+      ) {
+
+        return (
+          location.id ||
+          `approved-location-${index}`
+        ) ===
+          boxSelect.value;
+
+      }
+    ) || locations[0] || null;
+
+  }
+
+
+  function getApprovedLocationRows(
+    location
+  ) {
+
+    if (
+      Array.isArray(
+        location?.rows
+      )
+    ) {
+
+      return location.rows;
+
+    }
+
+
+    /*
+      Compatibility with older approved snapshots where
+      Location Box data contained K1/K2/... racks.
+    */
+
+    if (
+      Array.isArray(
+        location?.racks
+      )
+    ) {
+
+      const rows =
+        [];
+
+
+      location.racks.forEach(
+        function (rack) {
+
+          if (
+            Array.isArray(
+              rack?.rows
+            )
+          ) {
+
+            rows.push(
+              ...rack.rows
+            );
+
+          }
+
+        }
+      );
+
+
+      return rows;
+
+    }
+
+
+    return [];
+
+  }
+
+
+  function redrawApprovedLocationPdf() {
+
+    locationHost.innerHTML =
+      "";
+
+
+    const location =
+      getSelectedLocation();
+
+
+    if (!location) {
+      return;
+    }
+
+
+    const locationDrawing = {
+
+      name:
+        location.name ||
+        "Location Box",
+
+      rows:
+        getApprovedLocationRows(
+          location
+        )
+
+    };
+
+
+    locationHost.appendChild(
+      createRackSvg(
+        locationDrawing
+      )
+    );
+
+  }
+
+
+  endSelect.addEventListener(
+    "change",
+    function () {
+
+      populateApprovedLocationBoxes();
+
+    }
+  );
+
+
+  boxSelect.addEventListener(
+    "change",
+    redrawApprovedLocationPdf
+  );
+
+
+  /* =======================================================
+     EXISTING PDF GENERATOR COMPATIBILITY API
+
+     ctr-pdf-generator.js already calls these two APIs.
+  ======================================================= */
+
+  window.CTR_STATION_CONNECTIONS = {
+
+    ...(window.CTR_STATION_CONNECTIONS || {}),
+
+    redraw:
+      redrawApprovedStationPdf
+
+  };
+
+
+  window.CTR_LOCATION_CONNECTIONS = {
+
+    ...(window.CTR_LOCATION_CONNECTIONS || {}),
+
+    redraw:
+      redrawApprovedLocationPdf
+
+  };
+
+
+  /* =======================================================
+     INITIAL DRAW
+  ======================================================= */
+
+  redrawApprovedStationPdf();
+
+
+  populateApprovedLocationBoxes();
+
+
+  console.log(
+    "Approved PDF compatibility ready:",
+    {
+      stationRacks:
+        racks.length,
+
+      connectedEnds:
+        ends.length
+    }
+  );
+
+}
 
 })();

@@ -52,6 +52,40 @@ function escapeHtml(value) {
 }
 
 
+function cloneCtrData(value) {
+
+  if (
+    typeof window.structuredClone === "function"
+  ) {
+
+    try {
+
+      return window.structuredClone(
+        value
+      );
+
+    }
+    catch (error) {
+
+      console.warn(
+        "CTR structured clone fallback:",
+        error
+      );
+
+    }
+
+  }
+
+
+  return JSON.parse(
+    JSON.stringify(
+      value
+    )
+  );
+
+}
+
+
 function getRowLabel(index) {
 
   let number =
@@ -374,19 +408,6 @@ function relabelRows(
           .toUpperCase();
 
 
-      /*
-         Existing custom labels like:
-
-         AA
-         BB
-         A
-         B
-         C
-         D
-
-         are preserved exactly.
-      */
-
       if (
         currentLabel &&
         !usedLabels.has(
@@ -407,11 +428,6 @@ function relabelRows(
 
       }
 
-
-      /*
-         Only blank / duplicate label gets
-         a new unused alphabetical label.
-      */
 
       let labelIndex =
         0;
@@ -566,6 +582,44 @@ const currentStationId =
   stationUrlParams.get("id") ||
 
   null;
+
+
+/* =========================================================
+   ALTERATION MODE CONTEXT
+========================================================= */
+
+const currentAlterationId =
+  stationUrlParams.get(
+    "alteration"
+  );
+
+
+const stationPageMode =
+  stationUrlParams.get(
+    "mode"
+  );
+
+
+const isAlterationMode =
+  stationPageMode === "alteration" &&
+  Boolean(
+    currentAlterationId
+  );
+
+
+let currentAlterationStatus =
+  null;
+
+
+let alterationContextLoaded =
+  false;
+
+
+const ALTERATION_DRAFT_EDITOR_ROLES = [
+  "STATION_USER",
+  "EMPLOYEE",
+  "CORRECTION_AUTHORITY"
+];
 
 
 /* =========================================================
@@ -928,8 +982,7 @@ async function loadCurrentStationWorkflowStatus() {
 
 
   try {
-
-    const {
+        const {
       data,
       error
     } =
@@ -988,6 +1041,92 @@ async function loadCurrentStationWorkflowStatus() {
 
 
 /* =========================================================
+   LOAD ALTERATION CONTEXT
+========================================================= */
+
+async function loadCurrentAlterationContext() {
+
+  if (
+    !isAlterationMode
+  ) {
+
+    alterationContextLoaded =
+      true;
+
+    return null;
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from(
+        "alteration_drafts"
+      )
+      .select(`
+        alteration_id,
+        station_id,
+        status,
+        draft_data,
+        updated_at
+      `)
+      .eq(
+        "alteration_id",
+        currentAlterationId
+      )
+      .maybeSingle();
+
+
+  if (
+    error
+  ) {
+
+    throw error;
+
+  }
+
+
+  if (
+    !data
+  ) {
+
+    throw new Error(
+      "Alteration working copy was not found."
+    );
+
+  }
+
+
+  if (
+    data.station_id !==
+    currentStationId
+  ) {
+
+    throw new Error(
+      "This alteration does not belong to the selected station."
+    );
+
+  }
+
+
+  currentAlterationStatus =
+    data.status ||
+    "DRAFT";
+
+
+  alterationContextLoaded =
+    true;
+
+
+  return data;
+
+}
+
+
+/* =========================================================
    CAN EDIT?
 ========================================================= */
 
@@ -995,8 +1134,71 @@ function canEditCurrentStationDraft() {
 
   if (
     !currentStationId ||
-    !stationWorkflowStatusLoaded ||
-    !window.ctrAccess?.ready
+    !window.ctrAccess ||
+    !window.ctrAccess.ready
+  ) {
+
+    return false;
+
+  }
+
+
+  /* =====================================================
+     ALTERATION MODE
+  ===================================================== */
+
+  if (
+    isAlterationMode
+  ) {
+
+    if (
+      !alterationContextLoaded
+    ) {
+
+      return false;
+
+    }
+
+
+    if (
+      ![
+        "DRAFT",
+        "RETURNED_FOR_CORRECTION"
+      ].includes(
+        currentAlterationStatus
+      )
+    ) {
+
+      return false;
+
+    }
+
+
+    if (
+      window.ctrAccess
+        .isSystemAdmin()
+    ) {
+
+      return true;
+
+    }
+
+
+    return window.ctrAccess
+      .hasStationRole(
+        currentStationId,
+        ALTERATION_DRAFT_EDITOR_ROLES
+      );
+
+  }
+
+
+  /* =====================================================
+     NORMAL INITIAL CTR MODE
+  ===================================================== */
+
+  if (
+    !stationWorkflowStatusLoaded
   ) {
 
     return false;
@@ -1005,9 +1207,10 @@ function canEditCurrentStationDraft() {
 
 
   if (
-    !EDITABLE_STATION_STATUSES.includes(
-      currentStationWorkflowStatus
-    )
+    !EDITABLE_STATION_STATUSES
+      .includes(
+        currentStationWorkflowStatus
+      )
   ) {
 
     return false;
@@ -1015,38 +1218,21 @@ function canEditCurrentStationDraft() {
   }
 
 
-  try {
+  if (
+    window.ctrAccess
+      .isSystemAdmin()
+  ) {
 
-    if (
-      window.ctrAccess
-        .isSystemAdmin?.()
-    ) {
-
-      return true;
-
-    }
-
-
-    return Boolean(
-      window.ctrAccess
-        .hasStationRole?.(
-          currentStationId,
-          STATION_DRAFT_EDITOR_ROLES
-        )
-    );
+    return true;
 
   }
-  catch (error) {
 
-    console.error(
-      "Station edit access error:",
-      error
+
+  return window.ctrAccess
+    .hasStationRole(
+      currentStationId,
+      STATION_DRAFT_EDITOR_ROLES
     );
-
-
-    return false;
-
-  }
 
 }
 
@@ -1071,6 +1257,43 @@ function requireCurrentStationDraftEdit() {
 
 
   if (
+    isAlterationMode
+  ) {
+
+    if (
+      !alterationContextLoaded
+    ) {
+
+      message =
+        "Alteration data is still loading. Please try again.";
+
+    }
+
+    else if (
+      currentAlterationStatus &&
+      ![
+        "DRAFT",
+        "RETURNED_FOR_CORRECTION"
+      ].includes(
+        currentAlterationStatus
+      )
+    ) {
+
+      message =
+        `This alteration is ${currentAlterationStatus} and is no longer editable.`;
+
+    }
+
+    else {
+
+      message =
+        "You do not have permission to edit this CTR alteration.";
+
+    }
+
+  }
+
+  else if (
     currentStationWorkflowStatus &&
     !EDITABLE_STATION_STATUSES.includes(
       currentStationWorkflowStatus
@@ -1078,7 +1301,7 @@ function requireCurrentStationDraftEdit() {
   ) {
 
     message =
-      "This station is no longer in editable draft stage.";
+      "This approved/workflow-controlled CTR cannot be edited directly. Create or open an alteration instead.";
 
   }
 
@@ -1109,6 +1332,22 @@ function applyStationBuilderAccessMode() {
       : "view";
 
 
+  document.body.dataset.ctrMode =
+    isAlterationMode
+      ? "alteration"
+      : "initial";
+
+
+  if (
+    currentAlterationId
+  ) {
+
+    document.body.dataset.alterationId =
+      currentAlterationId;
+
+  }
+
+
   document
     .querySelectorAll(
       "[data-station-edit-control]"
@@ -1131,14 +1370,67 @@ function applyStationBuilderAccessMode() {
       !editable;
 
 
-    initialDataEntryButton.textContent =
+    if (
+      isAlterationMode
+    ) {
 
-      currentStationWorkflowStatus ===
-      "DRAFT"
+      initialDataEntryButton.hidden =
+        false;
 
-        ? "Continue Data Entry"
 
-        : "Initial Data Entry";
+      initialDataEntryButton.textContent =
+        currentAlterationStatus ===
+        "RETURNED_FOR_CORRECTION"
+
+          ? "Continue Correction"
+
+          : "Continue Alteration";
+
+
+      initialDataEntryButton.title =
+        "Edit the working copy of the approved CTR. The approved version remains unchanged.";
+
+    }
+
+    else {
+
+      initialDataEntryButton.textContent =
+        currentStationWorkflowStatus ===
+        "DRAFT"
+
+          ? "Continue Data Entry"
+
+          : "Initial Data Entry";
+
+    }
+
+  }
+
+
+  if (
+    resetCtrDraftButton
+  ) {
+
+    resetCtrDraftButton.hidden =
+      isAlterationMode ||
+      !editable;
+
+  }
+
+
+  const modifyButton =
+    document.getElementById(
+      "modifyCtrButton"
+    );
+
+
+  if (
+    modifyButton &&
+    isAlterationMode
+  ) {
+
+    modifyButton.hidden =
+      true;
 
   }
 
@@ -1160,11 +1452,6 @@ function applyStationBuilderAccessMode() {
 
   editElements.forEach(
     function (element) {
-
-      /*
-         Open/Close buttons must remain usable
-         even in view-only mode.
-      */
 
       if (
         element.classList.contains(
@@ -1411,11 +1698,13 @@ function openTerminalEditor(
 
   terminalEditor.scrollIntoView(
     {
+
       behavior:
         "smooth",
 
       block:
         "center"
+
     }
   );
 
@@ -1434,11 +1723,14 @@ function closeEditor() {
   selectedTerminal =
     null;
 
+
   selectedTerminalRack =
     null;
 
+
   selectedTerminalRow =
     null;
+
 
   selectedTerminalOwner =
     null;
@@ -1451,53 +1743,29 @@ function saveTerminalData() {
   if (
     !requireCurrentStationDraftEdit()
   ) {
-
     return;
-
   }
 
 
   if (
     !selectedTerminal
   ) {
-
     return;
-
   }
 
 
-  selectedTerminal.particular =
-    circuitParticular
-      ?.value
-      ?.trim() ||
-    "";
+  /* =====================================================
+     FIND THE REAL TERMINAL INSIDE MASTER CTR DATA
 
+     Important:
+     The terminal opened by drawing/UI may sometimes be a
+     rendered/copied object. We therefore locate the real
+     terminal again inside stationCtrRacks / connectedEnds
+     before applying changes.
+  ===================================================== */
 
-  selectedTerminal.locationBox =
-    locationBox
-      ?.value
-      ?.trim() ||
-    "";
-
-
-  selectedTerminal.locationTerminal =
-    locationTerminal
-      ?.value
-      ?.trim() ||
-    "";
-
-
-  selectedTerminal.status =
-    terminalStatus
-      ?.value ||
-    "SPARE";
-
-
-  selectedTerminal.remarks =
-    terminalRemarks
-      ?.value
-      ?.trim() ||
-    "";
+  let realTerminal =
+    null;
 
 
   if (
@@ -1505,40 +1773,309 @@ function saveTerminalData() {
     "location"
   ) {
 
-    renderConnectedEnds();
+    for (
+      const end of connectedEnds
+    ) {
+
+      const location =
+        (
+          end.locations ||
+          []
+        ).find(
+          function (item) {
+
+            return (
+              item.id ===
+              selectedTerminalRack?.id
+            );
+
+          }
+        );
+
+
+      if (
+        !location
+      ) {
+        continue;
+      }
+
+
+      const row =
+        (
+          location.rows ||
+          []
+        ).find(
+          function (item) {
+
+            return (
+              item.id ===
+              selectedTerminalRow?.id
+            );
+
+          }
+        );
+
+
+      if (
+        !row
+      ) {
+        continue;
+      }
+
+
+      realTerminal =
+        (
+          row.terminals ||
+          []
+        ).find(
+          function (item) {
+
+            return (
+              item.id ===
+              selectedTerminal.id
+            );
+
+          }
+        );
+
+
+      if (
+        !realTerminal
+      ) {
+
+        realTerminal =
+          (
+            row.terminals ||
+            []
+          ).find(
+            function (item) {
+
+              return (
+                item.number ===
+                selectedTerminal.number
+              );
+
+            }
+          );
+
+      }
+
+
+      if (
+        realTerminal
+      ) {
+        break;
+      }
+
+    }
 
   }
+
   else {
 
-    renderStationCtrRacks();
+    const rack =
+      stationCtrRacks.find(
+        function (item) {
+
+          return (
+            item.id ===
+            selectedTerminalRack?.id
+          );
+
+        }
+      );
+
+
+    const row =
+      rack
+        ?.rows
+        ?.find(
+          function (item) {
+
+            return (
+              item.id ===
+              selectedTerminalRow?.id
+            );
+
+          }
+        );
+
+
+    if (
+      row
+    ) {
+
+      realTerminal =
+        row.terminals.find(
+          function (item) {
+
+            return (
+              item.id ===
+              selectedTerminal.id
+            );
+
+          }
+        );
+
+
+      if (
+        !realTerminal
+      ) {
+
+        realTerminal =
+          row.terminals.find(
+            function (item) {
+
+              return (
+                item.number ===
+                selectedTerminal.number
+              );
+
+            }
+          );
+
+      }
+
+    }
 
   }
+
+
+  /*
+     Fallback only if the selected terminal already is the
+     real model object.
+  */
+
+  if (
+    !realTerminal
+  ) {
+
+    realTerminal =
+      selectedTerminal;
+
+  }
+
+
+  /* =====================================================
+     APPLY EDITED VALUES TO MASTER DATA
+  ===================================================== */
+
+  realTerminal.particular =
+    circuitParticular
+      ?.value
+      ?.trim() ||
+    "";
+
+
+  realTerminal.locationBox =
+    locationBox
+      ?.value
+      ?.trim() ||
+    "";
+
+
+  realTerminal.locationTerminal =
+    locationTerminal
+      ?.value
+      ?.trim() ||
+    "";
+
+
+  realTerminal.status =
+    terminalStatus
+      ?.value ||
+    "SPARE";
+
+
+  realTerminal.remarks =
+    terminalRemarks
+      ?.value
+      ?.trim() ||
+    "";
+
+
+  /*
+     Keep selected object synchronized as well.
+  */
+
+  if (
+    selectedTerminal !==
+    realTerminal
+  ) {
+
+    selectedTerminal.particular =
+      realTerminal.particular;
+
+    selectedTerminal.locationBox =
+      realTerminal.locationBox;
+
+    selectedTerminal.locationTerminal =
+      realTerminal.locationTerminal;
+
+    selectedTerminal.status =
+      realTerminal.status;
+
+    selectedTerminal.remarks =
+      realTerminal.remarks;
+
+  }
+
+
+  console.log(
+    "CTR terminal committed to master data:",
+    {
+      owner:
+        selectedTerminalOwner,
+
+      terminalId:
+        realTerminal.id,
+
+      number:
+        realTerminal.number,
+
+      status:
+        realTerminal.status,
+
+      particular:
+        realTerminal.particular,
+
+      remarks:
+        realTerminal.remarks
+    }
+  );
+
+
+  const owner =
+    selectedTerminalOwner;
 
 
   closeEditor();
 
+
+  if (
+    owner ===
+    "location"
+  ) {
+
+    renderConnectedEnds();
+
+    window
+      .CTR_LOCATION_SVG_VIEW
+      ?.refresh?.();
+
+  }
+
+  else {
+
+    renderStationCtrRacks();
+
+    window
+      .CTR_STATION_SVG_VIEW
+      ?.refresh?.();
+
+  }
+
 }
-
-
-closeTerminalEditorButton
-  ?.addEventListener(
-    "click",
-    closeEditor
-  );
-
-
-cancelTerminalEditButton
-  ?.addEventListener(
-    "click",
-    closeEditor
-  );
-
-
-saveTerminalPreviewButton
-  ?.addEventListener(
-    "click",
-    saveTerminalData
-  );
 
 
 /* =========================================================
@@ -1711,8 +2248,6 @@ function createRemoveTerminalButton(
   return button;
 
 }
-
-
 /* =========================================================
    FUSE EDITOR
 ========================================================= */
@@ -2395,6 +2930,7 @@ function buildRowBlock(
       `ROW ${row.label}`;
 
   }
+
   else {
 
     title.innerHTML = `
@@ -2640,7 +3176,7 @@ function buildRowBlock(
 
 
 /* =========================================================
-   RENDER STATION CTR RACKS - LAZY
+   RENDER STATION CTR RACKS
 ========================================================= */
 
 function renderStationCtrRacks() {
@@ -2675,10 +3211,6 @@ function renderStationCtrRacks() {
         rack.id;
 
 
-      /* ===============================================
-         RACK HEADER
-      =============================================== */
-
       const header =
         document.createElement(
           "div"
@@ -2703,9 +3235,7 @@ function renderStationCtrRacks() {
         document.createElement(
           "span"
         );
-
-
-      label.textContent =
+              label.textContent =
         "CTR RACK";
 
 
@@ -2951,10 +3481,6 @@ addStationCtrRackButton
       );
 
 
-      /*
-         Newly added rack opens automatically.
-      */
-
       openedStationRacks.add(
         rack.id
       );
@@ -3042,8 +3568,6 @@ function createLocationRackView(
   );
 
 
-  /* TOOLBAR */
-
   const toolbar =
     document.createElement(
       "div"
@@ -3087,8 +3611,6 @@ function createLocationRackView(
     "systematic-grid-actions";
 
 
-  /* ADD ROW */
-
   const addRow =
     document.createElement(
       "button"
@@ -3130,8 +3652,8 @@ function createLocationRackView(
       location.rows.push(
         createRow(
           getNextUnusedRowLabel(
-          location
-         ),
+            location
+          ),
           columns
         )
       );
@@ -3142,8 +3664,6 @@ function createLocationRackView(
     }
   );
 
-
-  /* ADD COLUMN */
 
   const addColumn =
     document.createElement(
@@ -3200,8 +3720,6 @@ function createLocationRackView(
     }
   );
 
-
-  /* REMOVE ROW */
 
   const removeRow =
     document.createElement(
@@ -3272,8 +3790,6 @@ function createLocationRackView(
     }
   );
 
-
-  /* REMOVE COLUMN */
 
   const removeColumn =
     document.createElement(
@@ -3399,7 +3915,7 @@ function createLocationRackView(
 
 
 /* =========================================================
-   RENDER CONNECTED ENDS - LAZY
+   RENDER CONNECTED ENDS
 ========================================================= */
 
 function renderConnectedEnds() {
@@ -3429,10 +3945,6 @@ function renderConnectedEnds() {
       card.className =
         "connected-end-card";
 
-
-      /* ===============================================
-         CONNECTED END HEADER
-      =============================================== */
 
       const header =
         document.createElement(
@@ -3525,10 +4037,6 @@ function renderConnectedEnds() {
         summary
       );
 
-
-      /* ===============================================
-         END ACTIONS
-      =============================================== */
 
       const actions =
         document.createElement(
@@ -3688,11 +4196,6 @@ function renderConnectedEnds() {
         header
       );
 
-
-      /* ===============================================
-         LOCATION BOX LIST
-         Always visible - no Open Location button
-      =============================================== */
 
       const locationGrid =
         document.createElement(
@@ -4021,9 +4524,7 @@ addConnectedEndButton
 
     }
   );
-
-
-/* =========================================================
+  /* =========================================================
    NORMALIZE SAVED RACK
 ========================================================= */
 
@@ -4128,57 +4629,57 @@ function normalizeRack(
 
 
       row.terminals.forEach(
-  function (
-    terminal,
-    terminalIndex
-  ) {
+        function (
+          terminal,
+          terminalIndex
+        ) {
 
-    terminal.id =
-      terminal.id ||
-      createId();
-
-
-    terminal.number =
-      String(
-        terminalIndex + 1
-      )
-        .padStart(
-          2,
-          "0"
-        );
+          terminal.id =
+            terminal.id ||
+            createId();
 
 
-    terminal.status =
-      terminal.status ||
-      "SPARE";
+          terminal.number =
+            String(
+              terminalIndex + 1
+            )
+              .padStart(
+                2,
+                "0"
+              );
 
 
-    terminal.conductorStyle =
-      terminal.conductorStyle ||
-      "STRAIGHT";
+          terminal.status =
+            terminal.status ||
+            "SPARE";
 
 
-    terminal.particular =
-      terminal.particular ||
-      "";
+          terminal.conductorStyle =
+            terminal.conductorStyle ||
+            "STRAIGHT";
 
 
-    terminal.locationBox =
-      terminal.locationBox ||
-      "";
+          terminal.particular =
+            terminal.particular ||
+            "";
 
 
-    terminal.locationTerminal =
-      terminal.locationTerminal ||
-      "";
+          terminal.locationBox =
+            terminal.locationBox ||
+            "";
 
 
-    terminal.remarks =
-      terminal.remarks ||
-      "";
+          terminal.locationTerminal =
+            terminal.locationTerminal ||
+            "";
 
-    }
-  );
+
+          terminal.remarks =
+            terminal.remarks ||
+            "";
+
+        }
+      );
 
     }
   );
@@ -4485,6 +4986,25 @@ function applyDraftData(data) {
 async function getCurrentUser() {
 
   const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabaseClient
+      .auth
+      .getSession();
+
+
+  if (
+    !sessionError &&
+    sessionData?.session?.user
+  ) {
+
+    return sessionData.session.user;
+
+  }
+
+
+  const {
     data,
     error
   } =
@@ -4506,6 +5026,176 @@ async function getCurrentUser() {
 
 
   return data.user;
+
+}
+
+
+/* =========================================================
+   SAVE ALTERATION WORKING COPY
+========================================================= */
+
+async function saveAlterationDraftSnapshot(
+  draftData,
+  savedAt
+) {
+
+  if (
+    !currentAlterationId
+  ) {
+
+    throw new Error(
+      "Alteration ID is missing."
+    );
+
+  }
+
+
+  const {
+    data: alterationStatus,
+    error: alterationError
+  } =
+    await supabaseClient
+      .rpc(
+        "save_ctr_alteration_draft",
+        {
+
+          p_alteration_id:
+            currentAlterationId,
+
+          p_draft_data:
+            draftData
+
+        }
+      );
+
+
+  if (
+    alterationError
+  ) {
+
+    console.error(
+      "Alteration RPC save error:",
+      alterationError
+    );
+
+
+    throw alterationError;
+
+  }
+
+
+  /*
+     Re-read saved alteration working copy.
+
+     This confirms that data was really persisted before
+     showing a success message.
+  */
+
+  const {
+    data: verification,
+    error: verificationError
+  } =
+    await supabaseClient
+      .from(
+        "alteration_drafts"
+      )
+      .select(`
+        alteration_id,
+        station_id,
+        status,
+        draft_data,
+        updated_at
+      `)
+      .eq(
+        "alteration_id",
+        currentAlterationId
+      )
+      .maybeSingle();
+
+
+  if (
+    verificationError
+  ) {
+
+    throw verificationError;
+
+  }
+
+
+  if (
+    !verification
+  ) {
+
+    throw new Error(
+      "Alteration was sent for saving but the saved working copy could not be verified."
+    );
+
+  }
+
+
+  if (
+    verification.station_id !==
+    currentStationId
+  ) {
+
+    throw new Error(
+      "Saved alteration belongs to a different station."
+    );
+
+  }
+
+
+  const verifiedSavedAt =
+    verification
+      .draft_data
+      ?.savedAt ||
+    null;
+
+
+  if (
+    verifiedSavedAt !==
+    savedAt
+  ) {
+
+    throw new Error(
+      "Alteration save was not persisted. Please do not leave this page and try Save Draft again."
+    );
+
+  }
+
+
+  currentAlterationStatus =
+    verification.status ||
+    alterationStatus ||
+    currentAlterationStatus ||
+    "DRAFT";
+
+
+  alterationContextLoaded =
+    true;
+
+
+  console.log(
+    "CTR alteration draft saved and verified:",
+    {
+
+      alterationId:
+        currentAlterationId,
+
+      stationId:
+        currentStationId,
+
+      status:
+        currentAlterationStatus,
+
+      savedAt:
+        verifiedSavedAt
+
+    }
+  );
+
+
+  return verification;
 
 }
 
@@ -4553,11 +5243,50 @@ async function saveCtrDraft() {
 
 
   setDraftStatus(
-    "Saving draft..."
+    isAlterationMode
+      ? "Saving alteration draft..."
+      : "Saving draft..."
   );
 
 
   try {
+
+    /*
+       If terminal editor is still open,
+       first copy visible values into CTR data.
+    */
+
+    if (
+      selectedTerminal &&
+      terminalEditor
+        ?.classList
+        .contains(
+          "open"
+        )
+    ) {
+
+      saveTerminalData();
+
+    }
+
+
+    /*
+       Same rule for fuse editor.
+    */
+
+    if (
+      selectedFuse &&
+      fuseEditor
+        ?.classList
+        .contains(
+          "open"
+        )
+    ) {
+
+      saveFuseData();
+
+    }
+
 
     const user =
       await getCurrentUser();
@@ -4574,16 +5303,68 @@ async function saveCtrDraft() {
         2,
 
       stationCtrRacks:
-        stationCtrRacks,
+        cloneCtrData(
+          stationCtrRacks
+        ),
 
       connectedEnds:
-        connectedEnds,
+        cloneCtrData(
+          connectedEnds
+        ),
 
       savedAt:
         savedAt
 
     };
 
+
+    /* =====================================================
+       ALTERATION MODE
+
+       IMPORTANT:
+       Approved V1 and normal ctr_drafts are NOT touched.
+    ===================================================== */
+
+    if (
+      isAlterationMode
+    ) {
+
+      const verification =
+        await saveAlterationDraftSnapshot(
+          draftData,
+          savedAt
+        );
+
+
+      currentAlterationStatus =
+        verification.status ||
+        currentAlterationStatus;
+
+
+      scheduleStationAccessApply();
+
+
+      setDraftStatus(
+        `Alteration saved: ${new Date(
+          verification.updated_at ||
+          savedAt
+        ).toLocaleString()}`
+      );
+
+
+      alert(
+        "CTR Alteration Draft saved successfully."
+      );
+
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       NORMAL INITIAL CTR SAVE
+    ===================================================== */
 
     const {
       error
@@ -4655,7 +5436,6 @@ async function saveCtrDraft() {
 
 
     currentStationWorkflowStatus =
-
       typeof stationStatus ===
       "string"
 
@@ -4687,19 +5467,27 @@ async function saveCtrDraft() {
   catch (error) {
 
     console.error(
-      "CTR draft save error:",
+      isAlterationMode
+        ? "CTR alteration save error:"
+        : "CTR draft save error:",
       error
     );
 
 
     setDraftStatus(
-      "Draft save failed"
+      isAlterationMode
+        ? "Alteration save failed"
+        : "Draft save failed"
     );
 
 
     alert(
       error.message ||
-      "CTR Draft could not be saved."
+      (
+        isAlterationMode
+          ? "CTR Alteration Draft could not be saved."
+          : "CTR Draft could not be saved."
+      )
     );
 
   }
@@ -4722,8 +5510,6 @@ async function saveCtrDraft() {
   }
 
 }
-
-
 /* =========================================================
    LOAD DRAFT
 ========================================================= */
@@ -4744,11 +5530,96 @@ async function loadCtrDraft() {
 
 
   setDraftStatus(
-    "Loading CTR data..."
+    isAlterationMode
+      ? "Loading alteration working copy..."
+      : "Loading CTR data..."
   );
 
 
   try {
+
+    /* =====================================================
+       ALTERATION MODE
+    ===================================================== */
+
+    if (
+      isAlterationMode
+    ) {
+
+      const alterationData =
+        await loadCurrentAlterationContext();
+
+
+      if (
+        !alterationData?.draft_data ||
+        typeof alterationData.draft_data !==
+        "object"
+      ) {
+
+        throw new Error(
+          "Alteration working copy has no CTR snapshot."
+        );
+
+      }
+
+
+      applyDraftData(
+        cloneCtrData(
+          alterationData.draft_data
+        )
+      );
+
+
+      const savedDate =
+        alterationData.updated_at
+
+          ? new Date(
+              alterationData.updated_at
+            )
+
+          : null;
+
+
+      setDraftStatus(
+        savedDate
+
+          ? `Alteration draft loaded: ${savedDate.toLocaleString()}`
+
+          : "Alteration draft loaded"
+      );
+
+
+      console.log(
+        "CTR alteration working copy loaded:",
+        {
+
+          alterationId:
+            currentAlterationId,
+
+          stationId:
+            currentStationId,
+
+          status:
+            currentAlterationStatus,
+
+          savedAt:
+            alterationData
+              .draft_data
+              ?.savedAt ||
+            null
+
+        }
+      );
+
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       NORMAL INITIAL CTR DRAFT
+    ===================================================== */
 
     const {
       data,
@@ -4795,7 +5666,9 @@ async function loadCtrDraft() {
 
 
     applyDraftData(
-      data.draft_data
+      cloneCtrData(
+        data.draft_data
+      )
     );
 
 
@@ -4810,6 +5683,7 @@ async function loadCtrDraft() {
       );
 
     }
+
     else {
 
       setDraftStatus(
@@ -4823,14 +5697,21 @@ async function loadCtrDraft() {
   catch (error) {
 
     console.error(
-      "CTR draft load error:",
+      isAlterationMode
+        ? "CTR alteration load error:"
+        : "CTR draft load error:",
       error
     );
 
 
     setDraftStatus(
-      "Unable to load draft"
+      isAlterationMode
+        ? "Unable to load alteration draft"
+        : "Unable to load draft"
     );
+
+
+    throw error;
 
   }
 
@@ -4842,6 +5723,26 @@ async function loadCtrDraft() {
 ========================================================= */
 
 async function resetCtrDraft() {
+
+  /*
+     Alteration mode me blank reset allow nahi hai.
+
+     Alteration hamesha approved CTR ki copied working
+     version hoti hai.
+  */
+
+  if (
+    isAlterationMode
+  ) {
+
+    alert(
+      "Alteration drafts cannot be reset to a blank CTR. Edit the copied approved CTR instead."
+    );
+
+    return;
+
+  }
+
 
   if (
     !requireCurrentStationDraftEdit()
@@ -4992,7 +5893,7 @@ async function resetCtrDraft() {
 
 
 /* =========================================================
-   INITIAL DATA ENTRY
+   INITIAL DATA ENTRY / ALTERATION EDIT ENTRY
 ========================================================= */
 
 function openInitialDataEntryMode() {
@@ -5009,11 +5910,13 @@ function openInitialDataEntryMode() {
   stationCtrRacksContainer
     ?.scrollIntoView(
       {
+
         behavior:
           "smooth",
 
         block:
           "start"
+
       }
     );
 
@@ -5052,28 +5955,41 @@ resetCtrDraftButton
 async function initializeStationBuilder() {
 
   setDraftStatus(
-    "Loading station CTR..."
+    isAlterationMode
+      ? "Loading CTR alteration..."
+      : "Loading station CTR..."
   );
 
 
   try {
 
     /*
-       Status first so edit/view mode is correct.
+       Station workflow status pehle load hoga.
+
+       IMPORTANT:
+       Alteration mode me station APPROVED reh sakta hai.
+       Edit permission alteration draft status se decide hogi.
     */
 
     await loadCurrentStationWorkflowStatus();
 
 
     /*
-       Database data before rendering.
+       loadCtrDraft() automatically decide karega:
+
+       ALTERATION MODE
+       -> alteration_drafts
+
+       NORMAL INITIAL MODE
+       -> ctr_drafts
     */
 
     await loadCtrDraft();
 
 
     /*
-       Allow browser to paint once before drawing.
+       Browser ko ek paint cycle dena useful hai,
+       especially large CTR drawings ke liye.
     */
 
     await new Promise(
@@ -5094,9 +6010,7 @@ async function initializeStationBuilder() {
 
 
     /*
-       IMPORTANT:
-       All racks/end/location remain collapsed initially.
-       Heavy terminals are therefore not created.
+       Heavy drawings default collapsed/open-state reset.
     */
 
     openedStationRacks.clear();
@@ -5121,14 +6035,28 @@ async function initializeStationBuilder() {
         station:
           currentStationId,
 
+        mode:
+          isAlterationMode
+            ? "ALTERATION"
+            : "INITIAL",
+
+        alterationId:
+          currentAlterationId,
+
+        alterationStatus:
+          currentAlterationStatus,
+
         racks:
           stationCtrRacks.length,
 
         ends:
           connectedEnds.length,
 
-        status:
-          currentStationWorkflowStatus
+        stationStatus:
+          currentStationWorkflowStatus,
+
+        editAllowed:
+          canEditCurrentStationDraft()
 
       }
     );
@@ -5144,7 +6072,9 @@ async function initializeStationBuilder() {
 
 
     setDraftStatus(
-      "Unable to load station CTR"
+      isAlterationMode
+        ? "Unable to load CTR alteration"
+        : "Unable to load station CTR"
     );
 
 
@@ -5152,9 +6082,16 @@ async function initializeStationBuilder() {
 
     renderConnectedEnds();
 
+
+    scheduleStationAccessApply();
+
   }
 
 }
 
+
+/* =========================================================
+   START
+========================================================= */
 
 initializeStationBuilder();

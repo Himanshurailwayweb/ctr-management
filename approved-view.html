@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Approved CTR View | CTR Management
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/ctr.css"
+  >
+
+</head>
+
+
+<body>
+
+
+  <div class="app">
+
+
+    <!-- =====================================================
+         SIDEBAR PLACEHOLDER
+         railway-shell.js handles the main navigation/header
+    ====================================================== -->
+
+    <aside class="sidebar"></aside>
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+    ====================================================== -->
+
+    <main class="main-content">
+
+
+      <section class="page-content">
+
+
+        <!-- =================================================
+             BREADCRUMB
+        ================================================== -->
+
+        <div class="breadcrumb">
+
+          CTR Management /
+          Approved CTR / PDFs /
+          Approved Version
+
+        </div>
+
+
+        <!-- =================================================
+             HERO
+        ================================================== -->
+
+        <section class="ctr-hero">
+
+
+          <div>
+
+            <span class="hero-tag">
+              APPROVED CTR RECORD
+            </span>
+
+            <h2 id="approvedViewTitle">
+              Approved CTR Version
+            </h2>
+
+            <p>
+              Read-only view of the permanently retained
+              approved CTR snapshot.
+            </p>
+
+          </div>
+
+
+          <div class="hero-status">
+
+            <span>
+              RECORD STATUS
+            </span>
+
+            <strong id="approvedViewHeroStatus">
+              ● Loading...
+            </strong>
+
+          </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             BACK ACTION
+        ================================================== -->
+
+        <section
+          style="
+            margin: 18px 0;
+            display: flex;
+            justify-content: flex-end;
+          "
+        >
+
+          <a
+            href="approved.html"
+            class="topbar-back"
+          >
+            ← Back to Approved CTR / PDFs
+          </a>
+
+        </section>
+
+
+        <!-- =================================================
+             PAGE STATUS
+        ================================================== -->
+
+        <section
+          id="approvedViewStatus"
+          class="approval-status"
+          hidden
+        ></section>
+
+
+        <!-- =================================================
+             RECORD INFORMATION
+        ================================================== -->
+
+        <section class="workflow-section">
+
+
+          <div class="module-heading">
+
+            <div>
+
+              <h2>
+                Approved Record Information
+              </h2>
+
+              <p>
+                Identification and approval details
+                of this retained CTR version.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="station-summary-grid">
+
+
+            <article class="summary-card">
+
+              <span>
+                STATION
+              </span>
+
+              <strong id="approvedViewStation">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="summary-card">
+
+              <span>
+                STATION CODE
+              </span>
+
+              <strong id="approvedViewStationCode">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="summary-card">
+
+              <span>
+                VERSION
+              </span>
+
+              <strong id="approvedViewVersion">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="summary-card">
+
+              <span>
+                STATUS
+              </span>
+
+              <strong id="approvedViewRecordStatus">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="summary-card">
+
+              <span>
+                SOURCE
+              </span>
+
+              <strong id="approvedViewSource">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="summary-card">
+
+              <span>
+                FINALIZED ON
+              </span>
+
+              <strong id="approvedViewFinalizedAt">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="summary-card">
+
+              <span>
+                DIGITALLY SIGNED
+              </span>
+
+              <strong id="approvedViewSigned">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="summary-card">
+
+              <span>
+                APPROVED BY
+              </span>
+
+              <strong id="approvedViewApprovedBy">
+                —
+              </strong>
+
+            </article>
+
+
+          </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             READ ONLY NOTICE
+        ================================================== -->
+
+        <section class="station-info-note">
+
+          <strong>
+            Read-Only Approved Record
+          </strong>
+
+          <p>
+            This page displays the CTR snapshot retained
+            at the time this version was approved.
+
+            Changes made later to the live station CTR
+            will not modify this approved version.
+          </p>
+
+        </section>
+
+
+        <!-- =================================================
+             APPROVED CTR DRAWING
+        ================================================== -->
+
+        <section class="workflow-section">
+
+
+          <div class="module-heading">
+
+            <div>
+
+              <span class="hero-tag">
+                ENGINEERING DRAWING
+              </span>
+
+              <h2>
+                Approved CTR Drawing
+              </h2>
+
+              <p>
+                Engineering drawing generated from the
+                approved version snapshot.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="approvedSnapshotDrawing"
+            style="
+              min-height: 360px;
+              background: #ffffff;
+              border: 1px solid #dbe3ed;
+              border-radius: 6px;
+              padding: 20px;
+              overflow: auto;
+            "
+          >
+
+            <div class="approval-empty">
+
+              <strong>
+                Loading approved drawing...
+              </strong>
+
+              <p>
+                Reading the retained CTR snapshot.
+              </p>
+
+            </div>
+
+          </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             APPROVED CTR STRUCTURE
+        ================================================== -->
+
+        <section class="workflow-section">
+
+
+          <div class="module-heading">
+
+            <div>
+
+              <span class="hero-tag">
+                CTR STRUCTURE
+              </span>
+
+              <h2>
+                Approved CTR Data
+              </h2>
+
+              <p>
+                Station racks, rows, terminals,
+                connected ends and location boxes
+                stored in this approved version.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="approvedSnapshotStructure"
+          >
+
+            <div class="approval-empty">
+
+              <strong>
+                Loading CTR structure...
+              </strong>
+
+              <p>
+                Approved data will appear here.
+              </p>
+
+            </div>
+
+          </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             RECORD PRINCIPLE
+        ================================================== -->
+
+        <section class="station-info-note">
+
+          <strong>
+            Permanent Version Record
+          </strong>
+
+          <p>
+            This approved version is retained independently
+            from the live editable station CTR.
+
+            A later approved alteration will create a new
+            CTR version instead of overwriting this record.
+          </p>
+
+        </section>
+
+
+      </section>
+
+
+    </main>
+
+
+  </div>
+   <!-- =====================================================
+     APPROVED PDF GENERATOR COMPATIBILITY
+     Off-screen only - not visible to user
+====================================================== -->
+
+<div
+  id="approvedPdfCompatibility"
+  aria-hidden="true"
+  style="
+    position: fixed;
+    left: -20000px;
+    top: 0;
+    width: 1400px;
+    background: #ffffff;
+    pointer-events: none;
+  "
+>
+
+  <select id="stationSvgRackSelect"></select>
+
+  <div
+    id="stationSvgHost"
+    style="width: 1300px; background: #ffffff;"
+  ></div>
+
+
+  <select id="locationSvgEndSelect"></select>
+
+  <select id="locationSvgBoxSelect"></select>
+
+  <div
+    id="locationSvgHost"
+    style="width: 1300px; background: #ffffff;"
+  ></div>
+
+</div>
+
+  <!-- =====================================================
+       SCRIPTS
+  ====================================================== -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+  <script src="js/supabase-config.js"></script>
+
+  <script src="js/auth-guard.js"></script>
+
+  <script src="js/role-access.js"></script>
+
+  <script src="js/railway-shell.js"></script>
+
+  <script src="js/approved-view.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script src="js/ctr-pdf-generator.js"></script>
+
+
+</body>
+
+</html>
