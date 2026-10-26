@@ -1,21 +1,20 @@
 /* =========================================================
    CTR MANAGEMENT SYSTEM
-   DYNAMIC WORKFLOW INBOX
+   PENDING APPROVALS / WORKFLOW INBOX
 
-   DATABASE:
+   DATABASE RPC:
    public.list_ctr_workflow_inbox()
 
    ACTIONS:
+   - Open CTR
    - Digital Sign & Forward
    - Write Back
    - Withdraw Forwarding
    - Digital Sign & Final Approve
 
    IMPORTANT:
-   Digital signing buttons do NOT create fake signatures.
-   Signing UI/provider integration will be connected separately.
+   No fake digital signature is generated here.
 ========================================================= */
-
 
 (() => {
 
@@ -31,35 +30,42 @@
       "workflowInboxList"
     );
 
+
   const workflowInboxSearch =
     document.getElementById(
       "workflowInboxSearch"
     );
+
 
   const refreshWorkflowInbox =
     document.getElementById(
       "refreshWorkflowInbox"
     );
 
+
   const workflowInboxStatus =
     document.getElementById(
       "workflowInboxStatus"
     );
+
 
   const myActionCount =
     document.getElementById(
       "myActionCount"
     );
 
+
   const forwardedByMeCount =
     document.getElementById(
       "forwardedByMeCount"
     );
 
+
   const monitoringWorkflowCount =
     document.getElementById(
       "monitoringWorkflowCount"
     );
+
 
   const activeWorkflowCount =
     document.getElementById(
@@ -174,11 +180,22 @@
     return date.toLocaleString(
       "en-IN",
       {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
+
+        day:
+          "2-digit",
+
+        month:
+          "short",
+
+        year:
+          "numeric",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit"
+
       }
     );
 
@@ -194,9 +211,11 @@
     try {
 
       if (
-        typeof supabaseClient !== "undefined" &&
+        typeof supabaseClient !==
+          "undefined" &&
         supabaseClient &&
-        typeof supabaseClient.rpc === "function"
+        typeof supabaseClient.rpc ===
+          "function"
       ) {
 
         return supabaseClient;
@@ -217,7 +236,8 @@
 
     if (
       window.supabaseClient &&
-      typeof window.supabaseClient.rpc === "function"
+      typeof window.supabaseClient.rpc ===
+        "function"
     ) {
 
       return window.supabaseClient;
@@ -250,7 +270,7 @@
 
 
       await new Promise(
-        (resolve) =>
+        resolve =>
           setTimeout(
             resolve,
             50
@@ -261,6 +281,70 @@
 
 
     return null;
+
+  }
+
+
+  /* =====================================================
+     PROMISE TIMEOUT
+
+     Prevents page from staying on
+     "Loading CTR workflow..." forever.
+  ===================================================== */
+
+  function timeoutResult(
+    milliseconds
+  ) {
+
+    return new Promise(
+      resolve => {
+
+        window.setTimeout(
+          () => {
+
+            resolve({
+
+              data:
+                null,
+
+              error: {
+
+                message:
+                  "CTR workflow request timed out."
+
+              }
+
+            });
+
+          },
+          milliseconds
+        );
+
+      }
+    );
+
+  }
+
+
+  async function rpcWithTimeout(
+    client,
+    functionName,
+    parameters,
+    milliseconds = 8000
+  ) {
+
+    return await Promise.race([
+
+      client.rpc(
+        functionName,
+        parameters
+      ),
+
+      timeoutResult(
+        milliseconds
+      )
+
+    ]);
 
   }
 
@@ -331,37 +415,48 @@
       "#526b82";
 
   }
-  /* =========================================================
-   OPEN DIGITAL SIGNING WORKSPACE
-========================================================= */
 
-function openSigningWorkspace(workflowId) {
-
-  if (!workflowId) {
-
-    showStatus(
-      "Workflow ID is missing. Unable to open Digital Signing.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  window.location.href =
-    "workflow-sign.html?workflow=" +
-    encodeURIComponent(workflowId);
-
-}
 
   function hideStatus() {
 
-    if (workflowInboxStatus) {
+    if (!workflowInboxStatus) {
 
-      workflowInboxStatus.hidden =
-        true;
+      return;
 
     }
+
+
+    workflowInboxStatus.hidden =
+      true;
+
+  }
+
+
+  /* =====================================================
+     SIGNING WORKSPACE
+  ===================================================== */
+
+  function openSigningWorkspace(
+    workflowId
+  ) {
+
+    if (!workflowId) {
+
+      showStatus(
+        "Workflow ID is missing. Unable to open Digital Signing.",
+        "error"
+      );
+
+      return;
+
+    }
+
+
+    window.location.href =
+      "workflow-sign.html?workflow=" +
+      encodeURIComponent(
+        workflowId
+      );
 
   }
 
@@ -374,7 +469,7 @@ function openSigningWorkspace(workflowId) {
 
     const current =
       workflowRecords.filter(
-        (record) =>
+        record =>
           record.task_relation ===
           "CURRENT"
       ).length;
@@ -382,7 +477,7 @@ function openSigningWorkspace(workflowId) {
 
     const forwarded =
       workflowRecords.filter(
-        (record) =>
+        record =>
           record.task_relation ===
           "FORWARDED"
       ).length;
@@ -390,7 +485,7 @@ function openSigningWorkspace(workflowId) {
 
     const monitoring =
       workflowRecords.filter(
-        (record) =>
+        record =>
           record.task_relation ===
           "MONITORING"
       ).length;
@@ -433,7 +528,7 @@ function openSigningWorkspace(workflowId) {
 
 
   /* =====================================================
-     EMPTY / LOADING
+     LOADING / EMPTY
   ===================================================== */
 
   function renderLoading() {
@@ -445,21 +540,20 @@ function openSigningWorkspace(workflowId) {
     }
 
 
-    workflowInboxList.innerHTML = `
+    workflowInboxList.innerHTML =
+      `
+        <div class="workflow-empty">
 
-      <div class="workflow-empty">
+          <strong>
+            Loading CTR workflow...
+          </strong>
 
-        <strong>
-          Loading CTR workflow...
-        </strong>
+          <p>
+            Reading authorized pending workflow records.
+          </p>
 
-        <p>
-          Reading authorized pending workflow records.
-        </p>
-
-      </div>
-
-    `;
+        </div>
+      `;
 
   }
 
@@ -475,33 +569,36 @@ function openSigningWorkspace(workflowId) {
     }
 
 
-    workflowInboxList.innerHTML = `
+    workflowInboxList.innerHTML =
+      `
+        <div class="workflow-empty">
 
-      <div class="workflow-empty">
+          <strong>
 
-        <strong>
+            ${
+              searchActive
 
-          ${
-            searchActive
-              ? "No matching workflow found."
-              : "No pending CTR workflow."
-          }
+                ? "No matching workflow found."
 
-        </strong>
+                : "No pending CTR workflow."
+            }
 
-        <p>
+          </strong>
 
-          ${
-            searchActive
-              ? "Try another station, officer or CTR record."
-              : "CTR records requiring review or forwarding will appear here."
-          }
+          <p>
 
-        </p>
+            ${
+              searchActive
 
-      </div>
+                ? "Try another station, officer or CTR record."
 
-    `;
+                : "CTR records requiring review or forwarding will appear here."
+            }
+
+          </p>
+
+        </div>
+      `;
 
   }
 
@@ -517,51 +614,45 @@ function openSigningWorkspace(workflowId) {
       "MONITORING";
 
 
-    if (relation === "CURRENT") {
+    if (
+      relation ===
+      "CURRENT"
+    ) {
 
       return `
-
         <span class="workflow-chip current">
-
           Requires My Action
-
         </span>
-
       `;
 
     }
 
 
-    if (relation === "FORWARDED") {
+    if (
+      relation ===
+      "FORWARDED"
+    ) {
 
       return `
-
         <span class="workflow-chip forwarded">
-
           Forwarded By Me
-
         </span>
-
       `;
 
     }
 
 
     return `
-
       <span class="workflow-chip monitoring">
-
         Monitoring
-
       </span>
-
     `;
 
   }
 
 
   /* =====================================================
-     STAGE NAME
+     WORKFLOW STAGE
   ===================================================== */
 
   function getStageName(record) {
@@ -592,6 +683,48 @@ function openSigningWorkspace(workflowId) {
 
 
   /* =====================================================
+     OPEN CTR URL
+
+     Supports normal baseline workflow and future
+     alteration workflow using same inbox.
+  ===================================================== */
+
+  function getCtrOpenUrl(
+    record
+  ) {
+
+    const stationId =
+      encodeURIComponent(
+        record.station_id || ""
+      );
+
+
+    if (
+      record.alteration_id
+    ) {
+
+      return (
+        "station.html?id=" +
+        stationId +
+        "&alteration=" +
+        encodeURIComponent(
+          record.alteration_id
+        ) +
+        "&mode=alteration"
+      );
+
+    }
+
+
+    return (
+      "station.html?id=" +
+      stationId
+    );
+
+  }
+
+
+  /* =====================================================
      ACTION BUTTONS
   ===================================================== */
 
@@ -603,141 +736,115 @@ function openSigningWorkspace(workflowId) {
       );
 
 
-    const stationId =
-      encodeURIComponent(
-        record.station_id
+    const openUrl =
+      getCtrOpenUrl(
+        record
       );
 
 
     const buttons = [];
 
 
-    /* ---------------------------------------------------
-       OPEN CTR
-    --------------------------------------------------- */
+    buttons.push(
+      `
+        <a
+          href="${openUrl}"
+          title="Open CTR"
+        >
+          Open CTR
+        </a>
+      `
+    );
 
-    buttons.push(`
-
-      <a
-        href="station.html?id=${stationId}"
-        title="Open CTR"
-      >
-
-        Open CTR
-
-      </a>
-
-    `);
-
-
-    /* ---------------------------------------------------
-       SIGN + FORWARD
-    --------------------------------------------------- */
 
     if (
-      record.can_sign_and_forward === true
+      record.can_sign_and_forward ===
+      true
     ) {
 
-      buttons.push(`
-
-        <button
-          type="button"
-          class="
-            primary-workflow-action
-            sign-forward-action
-          "
-          data-workflow-id="${workflowId}"
-        >
-
-          Digital Sign & Forward
-
-        </button>
-
-      `);
+      buttons.push(
+        `
+          <button
+            type="button"
+            class="
+              primary-workflow-action
+              sign-forward-action
+            "
+            data-workflow-id="${workflowId}"
+          >
+            Digital Sign & Forward
+          </button>
+        `
+      );
 
     }
 
 
-    /* ---------------------------------------------------
-       WRITE BACK
-    --------------------------------------------------- */
-
     if (
-      record.can_write_back === true
+      record.can_write_back ===
+      true
     ) {
 
-      buttons.push(`
-
-        <button
-          type="button"
-          class="
-            write-back-action
-            workflow-write-back
-          "
-          data-workflow-id="${workflowId}"
-        >
-
-          Write Back
-
-        </button>
-
-      `);
+      buttons.push(
+        `
+          <button
+            type="button"
+            class="
+              write-back-action
+              workflow-write-back
+            "
+            data-workflow-id="${workflowId}"
+          >
+            Write Back
+          </button>
+        `
+      );
 
     }
 
 
-    /* ---------------------------------------------------
-       FINAL APPROVAL
-    --------------------------------------------------- */
-
     if (
-      record.can_final_approve === true
+      record.can_final_approve ===
+      true
     ) {
 
-      buttons.push(`
-
-        <button
-          type="button"
-          class="
-            primary-workflow-action
-            final-approve-action
-          "
-          data-workflow-id="${workflowId}"
-        >
-
-          Digital Sign & Final Approve
-
-        </button>
-
-      `);
+      buttons.push(
+        `
+          <button
+            type="button"
+            class="
+              primary-workflow-action
+              final-approve-action
+            "
+            data-workflow-id="${workflowId}"
+          >
+            Digital Sign & Final Approve
+          </button>
+        `
+      );
 
     }
 
 
-    /* ---------------------------------------------------
-       WITHDRAW FORWARDING
-    --------------------------------------------------- */
-
     if (
-      record.can_withdraw_forwarding === true
+      record.can_withdraw_forwarding ===
+      true
     ) {
 
-      buttons.push(`
-
-        <button
-          type="button"
-          class="
-            withdraw-action
-            workflow-withdraw
-          "
-          data-workflow-id="${workflowId}"
-        >
-
-          Withdraw Forwarding
-
-        </button>
-
-      `);
+      buttons.push(
+        `
+          <button
+            type="button"
+            class="
+              withdraw-action
+              workflow-withdraw
+            "
+            data-workflow-id="${workflowId}"
+          >
+            Withdraw Forwarding
+          </button>
+        `
+      );
 
     }
 
@@ -779,276 +886,273 @@ function openSigningWorkspace(workflowId) {
 
 
     const rows =
-      records.map(
-        (
-          record,
-          index
-        ) => {
+      records
+        .map(
+          (
+            record,
+            index
+          ) => {
 
 
-          const stationName =
-            escapeHtml(
-              displayValue(
-                record.station_name
-              )
-            );
+            const stationName =
+              escapeHtml(
+                displayValue(
+                  record.station_name
+                )
+              );
 
 
-          const stationCode =
-            escapeHtml(
-              displayValue(
-                record.station_code
-              )
-            );
+            const stationCode =
+              escapeHtml(
+                displayValue(
+                  record.station_code
+                )
+              );
 
 
-          const division =
-            escapeHtml(
-              displayValue(
-                record.division_name
-              )
-            );
+            const division =
+              escapeHtml(
+                displayValue(
+                  record.division_name
+                )
+              );
 
 
-          const divisionCode =
-            escapeHtml(
-              displayValue(
-                record.division_code,
-                ""
-              )
-            );
+            const divisionCode =
+              escapeHtml(
+                displayValue(
+                  record.division_code,
+                  ""
+                )
+              );
 
 
-          const recordName =
-            escapeHtml(
-              displayValue(
-                record.record_name,
-                "CTR Record"
-              )
-            );
+            const recordName =
+              escapeHtml(
+                displayValue(
+                  record.record_name,
+                  "CTR Record"
+                )
+              );
 
 
-          const stageName =
-            escapeHtml(
-              getStageName(record)
-            );
+            const stageName =
+              escapeHtml(
+                getStageName(record)
+              );
 
 
-          const currentHolder =
-            escapeHtml(
-              displayValue(
-                record.current_assigned_name,
-                "Not recorded"
-              )
-            );
+            const currentHolder =
+              escapeHtml(
+                displayValue(
+                  record.current_assigned_name,
+                  "Not recorded"
+                )
+              );
 
 
-          const currentDesignation =
-            escapeHtml(
-              displayValue(
-                record.current_assigned_designation,
-                ""
-              )
-            );
+            const currentDesignation =
+              escapeHtml(
+                displayValue(
+                  record.current_assigned_designation,
+                  ""
+                )
+              );
 
 
-          const pendingSince =
-            escapeHtml(
-              formatDateTime(
-                record.last_action_at ||
-                record.initiated_at
-              )
-            );
+            const pendingSince =
+              escapeHtml(
+                formatDateTime(
+                  record.last_action_at ||
+                  record.initiated_at
+                )
+              );
 
 
-          const currentStep =
-            Number(
-              record.current_step_order
-            ) || 1;
+            const currentStep =
+              Number(
+                record.current_step_order
+              ) || 1;
 
 
-          const totalSteps =
-            Number(
-              record.total_steps
-            ) || 1;
+            const totalSteps =
+              Number(
+                record.total_steps
+              ) || 1;
 
 
-          return `
+            return `
+              <tr>
 
-            <tr>
+                <td class="workflow-sno">
+                  ${index + 1}
+                </td>
 
 
-              <td class="workflow-sno">
+                <td class="workflow-station">
 
-                ${index + 1}
+                  ${stationName}
 
-              </td>
+                  <span class="workflow-station-code">
+                    ${stationCode}
+                  </span>
 
+                </td>
 
-              <td class="workflow-station">
 
-                ${stationName}
+                <td>
 
-                <span class="workflow-station-code">
+                  ${division}
 
-                  ${stationCode}
+                  ${
+                    divisionCode
 
-                </span>
+                      ? `
+                        <span class="workflow-subtext">
+                          ${divisionCode}
+                        </span>
+                      `
 
-              </td>
+                      : ""
+                  }
 
+                </td>
 
-              <td>
 
-                ${division}
+                <td>
 
-                ${
-                  divisionCode
+                  <span class="workflow-record-name">
+                    ${recordName}
+                  </span>
 
-                    ? `
+                </td>
 
-                      <span class="workflow-subtext">
 
-                        ${divisionCode}
+                <td>
 
-                      </span>
+                  ${stageName}
 
-                    `
+                  <span class="workflow-subtext">
 
-                    : ""
-                }
+                    Step
+                    ${currentStep}
+                    of
+                    ${totalSteps}
 
-              </td>
+                  </span>
 
+                </td>
 
-              <td>
 
-                <span class="workflow-record-name">
+                <td>
 
-                  ${recordName}
+                  ${currentHolder}
 
-                </span>
+                  ${
+                    currentDesignation
 
-              </td>
+                      ? `
+                        <span class="workflow-subtext">
+                          ${currentDesignation}
+                        </span>
+                      `
 
+                      : ""
+                  }
 
-              <td>
+                </td>
 
-                ${stageName}
 
-                <span class="workflow-subtext">
+                <td>
+                  ${pendingSince}
+                </td>
 
-                  Step ${currentStep}
-                  of ${totalSteps}
 
-                </span>
+                <td>
+                  ${relationChip(record)}
+                </td>
 
-              </td>
 
+                <td>
 
-              <td>
+                  <div class="workflow-actions">
 
-                ${currentHolder}
+                    ${actionButtons(record)}
 
-                ${
-                  currentDesignation
+                  </div>
 
-                    ? `
+                </td>
 
-                      <span class="workflow-subtext">
 
-                        ${currentDesignation}
+              </tr>
+            `;
 
-                      </span>
+          }
+        )
+        .join("");
 
-                    `
 
-                    : ""
-                }
+    workflowInboxList.innerHTML =
+      `
+        <div class="workflow-register-wrap">
 
-              </td>
+          <table class="workflow-register">
 
+            <thead>
 
-              <td>
+              <tr>
 
-                ${pendingSince}
+                <th>
+                  S.No
+                </th>
 
-              </td>
+                <th>
+                  Station
+                </th>
 
+                <th>
+                  Division
+                </th>
 
-              <td>
+                <th>
+                  CTR Record
+                </th>
 
-                ${relationChip(record)}
+                <th>
+                  Current Stage
+                </th>
 
-              </td>
+                <th>
+                  Current Holder
+                </th>
 
+                <th>
+                  Pending Since
+                </th>
 
-              <td>
+                <th>
+                  My Relation
+                </th>
 
-                <div class="workflow-actions">
+                <th>
+                  Action
+                </th>
 
-                  ${actionButtons(record)}
+              </tr>
 
-                </div>
+            </thead>
 
-              </td>
 
+            <tbody>
 
-            </tr>
+              ${rows}
 
-          `;
+            </tbody>
 
-        }
-      )
-      .join("");
+          </table>
 
-
-    workflowInboxList.innerHTML = `
-
-      <div class="workflow-register-wrap">
-
-        <table class="workflow-register">
-
-
-          <thead>
-
-            <tr>
-
-              <th>S.No</th>
-
-              <th>Station</th>
-
-              <th>Division</th>
-
-              <th>CTR Record</th>
-
-              <th>Current Stage</th>
-
-              <th>Current Holder</th>
-
-              <th>Pending Since</th>
-
-              <th>My Relation</th>
-
-              <th>Action</th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody>
-
-            ${rows}
-
-          </tbody>
-
-
-        </table>
-
-      </div>
-
-    `;
+        </div>
+      `;
 
 
     bindActionEvents();
@@ -1066,8 +1170,8 @@ function openSigningWorkspace(workflowId) {
       workflowInboxSearch
         ?.value
         ?.trim()
-        ?.toLowerCase()
-        || "";
+        ?.toLowerCase() ||
+      "";
 
 
     if (!query) {
@@ -1083,7 +1187,7 @@ function openSigningWorkspace(workflowId) {
 
     const filtered =
       workflowRecords.filter(
-        (record) => {
+        record => {
 
 
           const text = [
@@ -1155,206 +1259,229 @@ function openSigningWorkspace(workflowId) {
       );
 
 
-    style.textContent = `
+    style.textContent =
+      `
+        .workflow-remark-dialog {
 
-      .workflow-remark-dialog {
+          width:
+            min(
+              520px,
+              calc(
+                100vw - 30px
+              )
+            );
 
-        width: min(520px, calc(100vw - 30px));
+          padding:
+            0;
 
-        padding: 0;
+          border:
+            1px solid #bccbd8;
 
-        border: 1px solid #bccbd8;
+          border-radius:
+            4px;
 
-        border-radius: 4px;
+          background:
+            #ffffff;
 
-        background: #ffffff;
+          box-shadow:
+            0 20px 60px
+            rgba(
+              24,
+              54,
+              83,
+              0.22
+            );
 
-        box-shadow:
-          0 20px 60px
-          rgba(24, 54, 83, 0.22);
+        }
 
-      }
 
+        .workflow-remark-dialog::backdrop {
 
-      .workflow-remark-dialog::backdrop {
+          background:
+            rgba(
+              19,
+              39,
+              59,
+              0.42
+            );
 
-        background:
-          rgba(19, 39, 59, 0.42);
+        }
 
-      }
 
+        .workflow-dialog-head {
 
-      .workflow-dialog-head {
+          padding:
+            16px 18px;
 
-        padding: 16px 18px;
+          border-bottom:
+            1px solid #d9e1e8;
 
-        border-bottom:
-          1px solid #d9e1e8;
+          background:
+            #f4f7fa;
 
-        background:
-          #f4f7fa;
+        }
 
-      }
 
+        .workflow-dialog-head strong {
 
-      .workflow-dialog-head strong {
+          display:
+            block;
 
-        display: block;
+          color:
+            #173e6e;
 
-        color:
-          #173e6e;
+          font-size:
+            14px;
 
-        font-size:
-          14px;
+        }
 
-      }
 
+        .workflow-dialog-head span {
 
-      .workflow-dialog-head span {
+          display:
+            block;
 
-        display: block;
+          margin-top:
+            5px;
 
-        margin-top:
-          5px;
+          color:
+            #718294;
 
-        color:
-          #718294;
+          font-size:
+            10px;
 
-        font-size:
-          10px;
+        }
 
-      }
 
+        .workflow-dialog-body {
 
-      .workflow-dialog-body {
+          padding:
+            18px;
 
-        padding:
-          18px;
+        }
 
-      }
 
+        .workflow-dialog-body label {
 
-      .workflow-dialog-body label {
+          display:
+            block;
 
-        display: block;
+          margin-bottom:
+            7px;
 
-        margin-bottom:
-          7px;
+          color:
+            #415f78;
 
-        color:
-          #415f78;
+          font-size:
+            10px;
 
-        font-size:
-          10px;
+          font-weight:
+            700;
 
-        font-weight:
-          700;
+        }
 
-      }
 
+        .workflow-dialog-body textarea {
 
-      .workflow-dialog-body textarea {
+          width:
+            100%;
 
-        width:
-          100%;
+          min-height:
+            110px;
 
-        min-height:
-          110px;
+          resize:
+            vertical;
 
-        resize:
-          vertical;
+          box-sizing:
+            border-box;
 
-        box-sizing:
-          border-box;
+          padding:
+            10px;
 
-        padding:
-          10px;
+          border:
+            1px solid #c6d3df;
 
-        border:
-          1px solid #c6d3df;
+          border-radius:
+            3px;
 
-        border-radius:
-          3px;
+          color:
+            #294967;
 
-        color:
-          #294967;
+          font:
+            inherit;
 
-        font:
-          inherit;
+          font-size:
+            11px;
 
-        font-size:
-          11px;
+          outline:
+            none;
 
-        outline:
-          none;
+        }
 
-      }
 
+        .workflow-dialog-actions {
 
-      .workflow-dialog-actions {
+          display:
+            flex;
 
-        display:
-          flex;
+          justify-content:
+            flex-end;
 
-        justify-content:
-          flex-end;
+          gap:
+            8px;
 
-        gap:
-          8px;
+          padding:
+            0 18px 18px;
 
-        padding:
-          0 18px 18px;
+        }
 
-      }
 
+        .workflow-dialog-actions button {
 
-      .workflow-dialog-actions button {
+          min-height:
+            35px;
 
-        min-height:
-          35px;
+          padding:
+            0 13px;
 
-        padding:
-          0 13px;
+          border:
+            1px solid #bdcad6;
 
-        border:
-          1px solid #bdcad6;
+          border-radius:
+            3px;
 
-        border-radius:
-          3px;
+          background:
+            #ffffff;
 
-        background:
-          #ffffff;
+          color:
+            #173e6e;
 
-        color:
-          #173e6e;
+          font-size:
+            10px;
 
-        font-size:
-          10px;
+          font-weight:
+            700;
 
-        font-weight:
-          700;
+          cursor:
+            pointer;
 
-        cursor:
-          pointer;
+        }
 
-      }
 
+        .workflow-dialog-actions
+        .confirm-workflow-dialog {
 
-      .workflow-dialog-actions
-      .confirm-workflow-dialog {
+          border-color:
+            #345f89;
 
-        border-color:
-          #345f89;
+          background:
+            #173e6e;
 
-        background:
-          #173e6e;
+          color:
+            #ffffff;
 
-        color:
-          #ffffff;
-
-      }
-
-    `;
+        }
+      `;
 
 
     document.head.appendChild(
@@ -1376,58 +1503,55 @@ function openSigningWorkspace(workflowId) {
       "workflow-remark-dialog";
 
 
-    dialog.innerHTML = `
+    dialog.innerHTML =
+      `
+        <div class="workflow-dialog-head">
 
-      <div class="workflow-dialog-head">
+          <strong id="workflowDialogTitle">
+            Workflow Action
+          </strong>
 
-        <strong id="workflowDialogTitle">
-          Workflow Action
-        </strong>
+          <span id="workflowDialogDescription">
+            Enter remarks to continue.
+          </span>
 
-        <span id="workflowDialogDescription">
-          Enter remarks to continue.
-        </span>
-
-      </div>
-
-
-      <div class="workflow-dialog-body">
-
-        <label for="workflowDialogRemarks">
-
-          Remarks *
-
-        </label>
-
-        <textarea
-          id="workflowDialogRemarks"
-          placeholder="Enter reason / remarks..."
-        ></textarea>
-
-      </div>
+        </div>
 
 
-      <div class="workflow-dialog-actions">
+        <div class="workflow-dialog-body">
 
-        <button
-          type="button"
-          id="cancelWorkflowDialog"
-        >
-          Cancel
-        </button>
+          <label for="workflowDialogRemarks">
+            Remarks *
+          </label>
+
+          <textarea
+            id="workflowDialogRemarks"
+            placeholder="Enter reason / remarks..."
+          ></textarea>
+
+        </div>
 
 
-        <button
-          type="button"
-          id="confirmWorkflowDialog"
-          class="confirm-workflow-dialog"
-        >
-          Confirm
-        </button>
+        <div class="workflow-dialog-actions">
 
-      </div>
+          <button
+            type="button"
+            id="cancelWorkflowDialog"
+          >
+            Cancel
+          </button>
 
-    `;
+
+          <button
+            type="button"
+            id="confirmWorkflowDialog"
+            class="confirm-workflow-dialog"
+          >
+            Confirm
+          </button>
+
+        </div>
+      `;
 
 
     document.body.appendChild(
@@ -1492,7 +1616,7 @@ function openSigningWorkspace(workflowId) {
 
 
     return new Promise(
-      (resolve) => {
+      resolve => {
 
 
         function cleanup() {
@@ -1634,12 +1758,13 @@ function openSigningWorkspace(workflowId) {
     );
 
 
-    const {
-      data,
-      error
-    } =
-      await client.rpc(
+    const result =
+      await rpcWithTimeout(
+
+        client,
+
         "write_back_ctr",
+
         {
 
           p_workflow_id:
@@ -1648,20 +1773,23 @@ function openSigningWorkspace(workflowId) {
           p_remarks:
             remarks
 
-        }
+        },
+
+        12000
+
       );
 
 
-    if (error) {
+    if (result.error) {
 
       console.error(
         "Write Back error:",
-        error
+        result.error
       );
 
 
       showStatus(
-        error.message ||
+        result.error.message ||
         "Unable to Write Back CTR.",
         "error"
       );
@@ -1669,12 +1797,6 @@ function openSigningWorkspace(workflowId) {
       return;
 
     }
-
-
-    console.log(
-      "WRITE BACK RESULT:",
-      data
-    );
 
 
     showStatus(
@@ -1734,12 +1856,13 @@ function openSigningWorkspace(workflowId) {
     );
 
 
-    const {
-      data,
-      error
-    } =
-      await client.rpc(
+    const result =
+      await rpcWithTimeout(
+
+        client,
+
         "withdraw_ctr_forwarding",
+
         {
 
           p_workflow_id:
@@ -1748,20 +1871,23 @@ function openSigningWorkspace(workflowId) {
           p_remarks:
             remarks
 
-        }
+        },
+
+        12000
+
       );
 
 
-    if (error) {
+    if (result.error) {
 
       console.error(
         "Withdraw Forwarding error:",
-        error
+        result.error
       );
 
 
       showStatus(
-        error.message ||
+        result.error.message ||
         "Unable to withdraw forwarding.",
         "error"
       );
@@ -1771,12 +1897,6 @@ function openSigningWorkspace(workflowId) {
     }
 
 
-    console.log(
-      "WITHDRAW RESULT:",
-      data
-    );
-
-
     showStatus(
       "Forwarding withdrawn successfully.",
       "success"
@@ -1784,39 +1904,6 @@ function openSigningWorkspace(workflowId) {
 
 
     await loadWorkflowInbox();
-
-  }
-
-
-  /* =====================================================
-     DIGITAL SIGN ACTION PLACEHOLDER
-
-     We deliberately do NOT call sign_and_forward_ctr()
-     with fake values.
-
-     Real signing UI will provide:
-       signature_method
-       signature_reference
-       signed_document_path
-       document hash
-  ===================================================== */
-
-  function openSignForward() {
-
-    showStatus(
-      "Digital signing screen is not connected yet. The CTR has not been forwarded.",
-      "normal"
-    );
-
-  }
-
-
-  function openFinalApproval() {
-
-    showStatus(
-      "Final digital signing screen is not connected yet. The CTR has not been finally approved.",
-      "normal"
-    );
 
   }
 
@@ -1832,7 +1919,7 @@ function openSigningWorkspace(workflowId) {
         ".workflow-write-back"
       )
       .forEach(
-        (button) => {
+        button => {
 
           button.addEventListener(
             "click",
@@ -1854,7 +1941,7 @@ function openSigningWorkspace(workflowId) {
         ".workflow-withdraw"
       )
       .forEach(
-        (button) => {
+        button => {
 
           button.addEventListener(
             "click",
@@ -1872,52 +1959,97 @@ function openSigningWorkspace(workflowId) {
 
 
     workflowInboxList
-  ?.querySelectorAll(
-    ".sign-forward-action"
-  )
-  .forEach(
-    (button) => {
+      ?.querySelectorAll(
+        ".sign-forward-action"
+      )
+      .forEach(
+        button => {
 
-      button.addEventListener(
-        "click",
-        () => {
+          button.addEventListener(
+            "click",
+            () => {
 
-          openSigningWorkspace(
-            button.dataset.workflowId
+              openSigningWorkspace(
+                button.dataset.workflowId
+              );
+
+            }
           );
 
         }
       );
 
-    }
-  );
 
-}
+    workflowInboxList
+      ?.querySelectorAll(
+        ".final-approve-action"
+      )
+      .forEach(
+        button => {
 
-workflowInboxList
-  ?.querySelectorAll(
-    ".final-approve-action"
-  )
-  .forEach(
-    (button) => {
+          button.addEventListener(
+            "click",
+            () => {
 
-      button.addEventListener(
-        "click",
-        () => {
+              openSigningWorkspace(
+                button.dataset.workflowId
+              );
 
-          openSigningWorkspace(
-            button.dataset.workflowId
+            }
           );
 
         }
       );
 
-    }
-  );
+  }
+
+
+  /* =====================================================
+     AUTH / RPC RETRY CHECK
+  ===================================================== */
+
+  function shouldRetryWorkflowError(
+    error
+  ) {
+
+    const message =
+      String(
+        error?.message ||
+        ""
+      )
+        .toLowerCase();
+
+
+    return (
+      message.includes(
+        "permission denied"
+      ) ||
+      message.includes(
+        "authentication required"
+      ) ||
+      message.includes(
+        "jwt"
+      ) ||
+      message.includes(
+        "timed out"
+      )
+    );
+
+  }
 
 
   /* =====================================================
      LOAD INBOX
+
+     IMPORTANT:
+     Do not call getUser/getSession here.
+
+     Supabase restores its browser token automatically.
+     We retry the actual secure RPC while restoration
+     completes.
+
+     Each RPC also has a timeout, so this page can never
+     remain on Loading forever.
   ===================================================== */
 
   async function loadWorkflowInbox() {
@@ -1933,6 +2065,17 @@ workflowInboxList
       true;
 
 
+    if (refreshWorkflowInbox) {
+
+      refreshWorkflowInbox.disabled =
+        true;
+
+      refreshWorkflowInbox.textContent =
+        "Loading...";
+
+    }
+
+
     renderLoading();
 
 
@@ -1942,7 +2085,6 @@ workflowInboxList
 
 
     try {
-
 
       const client =
         await waitForSupabaseClient();
@@ -1957,31 +2099,106 @@ workflowInboxList
       }
 
 
-      const {
-        data,
-        error
-      } =
-        await client.rpc(
-          "list_ctr_workflow_inbox"
+      let result =
+        null;
+
+
+      const maxAttempts =
+        8;
+
+
+      for (
+        let attempt = 1;
+        attempt <= maxAttempts;
+        attempt += 1
+      ) {
+
+        console.log(
+          `CTR workflow load attempt ${attempt}/${maxAttempts}`
         );
 
 
-      if (error) {
+        result =
+          await rpcWithTimeout(
 
-        console.error(
-          "Workflow inbox error:",
-          error
+            client,
+
+            "list_ctr_workflow_inbox",
+
+            undefined,
+
+            6000
+
+          );
+
+
+        if (
+          result &&
+          !result.error
+        ) {
+
+          break;
+
+        }
+
+
+        console.warn(
+          "CTR workflow attempt failed:",
+          result?.error
         );
 
 
-        throw error;
+        if (
+          !shouldRetryWorkflowError(
+            result?.error
+          )
+        ) {
+
+          break;
+
+        }
+
+
+        if (
+          attempt <
+          maxAttempts
+        ) {
+
+          await new Promise(
+            resolve =>
+              setTimeout(
+                resolve,
+                700
+              )
+          );
+
+        }
+
+      }
+
+
+      if (
+        !result ||
+        result.error
+      ) {
+
+        throw (
+          result?.error ||
+          new Error(
+            "CTR workflow could not be loaded."
+          )
+        );
 
       }
 
 
       workflowRecords =
-        Array.isArray(data)
-          ? data
+        Array.isArray(
+          result.data
+        )
+
+          ? result.data
+
           : [];
 
 
@@ -1999,11 +2216,9 @@ workflowInboxList
 
       hideStatus();
 
-
     }
 
     catch (error) {
-
 
       console.error(
         "Unable to load workflow inbox:",
@@ -2027,22 +2242,27 @@ workflowInboxList
         "error"
       );
 
-
     }
 
     finally {
 
-
       loading =
         false;
+
+
+      if (refreshWorkflowInbox) {
+
+        refreshWorkflowInbox.disabled =
+          false;
+
+        refreshWorkflowInbox.textContent =
+          "Refresh";
+
+      }
 
     }
 
   }
-
-
-
-
 
 
   /* =====================================================
@@ -2061,6 +2281,14 @@ workflowInboxList
       "click",
       loadWorkflowInbox
     );
+
+
+  /* =====================================================
+     OPTIONAL DEBUG / MANUAL RELOAD
+  ===================================================== */
+
+  window.reloadCtrWorkflowInbox =
+    loadWorkflowInbox;
 
 
   /* =====================================================

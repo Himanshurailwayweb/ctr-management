@@ -1437,6 +1437,137 @@
 
   }
 
+  /* =====================================================
+   SUBMIT ALTERATION FOR APPROVAL
+===================================================== */
+
+async function submitAlterationForApproval(
+  alterationId
+) {
+
+  const record =
+    alterationState.alterations.find(
+      item =>
+        item.id === alterationId
+    );
+
+
+  if (!record) {
+
+    alert(
+      "Alteration record was not found."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    ![
+      "DRAFT",
+      "RETURNED_FOR_CORRECTION"
+    ].includes(
+      record.status
+    )
+  ) {
+
+    alert(
+      "This alteration is no longer available for submission."
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      "Submit this CTR Alteration for officer approval?\n\nAfter submission, the draft will become read-only unless it is returned for correction."
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    showStatus(
+      "Submitting CTR alteration for approval..."
+    );
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient.rpc(
+        "submit_ctr_alteration",
+        {
+          p_alteration_id:
+            alterationId
+        }
+      );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    showStatus(
+      "CTR Alteration submitted for approval successfully.",
+      "success"
+    );
+
+
+    await loadAlterationData();
+
+    updateCards();
+
+    renderAlterationRecords();
+
+
+    console.log(
+      "ALTERATION SUBMITTED:",
+      data
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Submit alteration error:",
+      error
+    );
+
+
+    showStatus(
+      error?.message ||
+      "CTR Alteration could not be submitted.",
+      "error"
+    );
+
+
+    alert(
+      error?.message ||
+      "CTR Alteration could not be submitted."
+    );
+
+  }
+
+}
+
+
+/*
+   Expose only this controlled page action because
+   register buttons are rendered dynamically.
+*/
+window.submitAlterationForApproval =
+  submitAlterationForApproval;
 
   /* =====================================================
      ALTERATION REGISTER
@@ -1643,34 +1774,50 @@
                   </p>
 
 
-                  ${
-                    record.status ===
-                      "DRAFT"
+                 ${
+  [
+    "DRAFT",
+    "RETURNED_FOR_CORRECTION",
+    "SUBMITTED",
+    "UNDER_REVIEW",
+    "APPROVED"
+  ].includes(
+    record.status
+  )
 
-                      ?
+    ?
 
-                      `
+    `
+      <button
+        type="button"
+        onclick="
+          window.location.href=
+          'station.html?id=${encodeURIComponent(
+            record.station_id
+          )}&alteration=${encodeURIComponent(
+            record.id
+          )}&mode=alteration'
+        "
+      >
 
-                        <button
-                          type="button"
-                          onclick="
-                            window.location.href=
-                            'station.html?id=${encodeURIComponent(
-                              record.station_id
-                            )}&alteration=${encodeURIComponent(
-                              record.id
-                            )}&mode=alteration'
-                          "
-                        >
-                          Open Alteration Draft
-                        </button>
+        ${
+          record.status === "DRAFT"
+            ? "Open Alteration Draft"
 
-                      `
+            : record.status ===
+              "RETURNED_FOR_CORRECTION"
+              ? "Open for Correction"
 
-                      :
+              : "View Submitted Alteration"
+        }
 
-                      ""
-                  }
+      </button>
+    `
+
+    :
+
+    ""
+}
 
                 </div>
 

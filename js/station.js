@@ -5922,7 +5922,282 @@ function openInitialDataEntryMode() {
 
 }
 
+/* =========================================================
+   SUBMIT CTR ALTERATION
+========================================================= */
 
+let submitAlterationButton = null;
+
+
+function ensureSubmitAlterationButton() {
+
+  if (
+    !isAlterationMode ||
+    !saveCtrDraftButton
+  ) {
+    return;
+  }
+
+
+  if (
+    document.getElementById(
+      "submitAlterationButton"
+    )
+  ) {
+
+    submitAlterationButton =
+      document.getElementById(
+        "submitAlterationButton"
+      );
+
+    return;
+
+  }
+
+
+  submitAlterationButton =
+    document.createElement(
+      "button"
+    );
+
+
+  submitAlterationButton.id =
+    "submitAlterationButton";
+
+
+  submitAlterationButton.type =
+    "button";
+
+
+  submitAlterationButton.textContent =
+    "Submit Alteration";
+
+
+  submitAlterationButton.className =
+    saveCtrDraftButton.className;
+
+
+  submitAlterationButton.style.marginLeft =
+    "10px";
+
+
+  saveCtrDraftButton.insertAdjacentElement(
+    "afterend",
+    submitAlterationButton
+  );
+
+
+  submitAlterationButton.addEventListener(
+    "click",
+    submitCtrAlteration
+  );
+
+}
+
+
+async function submitCtrAlteration() {
+
+  if (
+    !isAlterationMode ||
+    !currentAlterationId
+  ) {
+
+    alert(
+      "Alteration context is missing."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    ![
+      "DRAFT",
+      "RETURNED_FOR_CORRECTION"
+    ].includes(
+      currentAlterationStatus
+    )
+  ) {
+
+    alert(
+      "This alteration is no longer available for submission."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    !confirm(
+      "Submit this CTR alteration for officer review? After submission it will become read-only."
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  submitAlterationButton.disabled =
+    true;
+
+
+  submitAlterationButton.textContent =
+    "Submitting...";
+
+
+  try {
+
+    /* Commit any currently open editor first */
+
+    if (
+      selectedTerminal &&
+      terminalEditor
+        ?.classList
+        .contains(
+          "open"
+        )
+    ) {
+
+      saveTerminalData();
+
+    }
+
+
+    if (
+      typeof selectedFuse !==
+        "undefined" &&
+      selectedFuse &&
+      fuseEditor
+        ?.classList
+        .contains(
+          "open"
+        )
+    ) {
+
+      saveFuseData();
+
+    }
+
+
+    /* Save latest snapshot before submission */
+
+    const savedAt =
+      new Date()
+        .toISOString();
+
+
+    const draftData = {
+
+      schemaVersion:
+        2,
+
+      stationCtrRacks:
+        cloneCtrData(
+          stationCtrRacks
+        ),
+
+      connectedEnds:
+        cloneCtrData(
+          connectedEnds
+        ),
+
+      savedAt:
+        savedAt
+
+    };
+
+
+    await saveAlterationDraftSnapshot(
+      draftData,
+      savedAt
+    );
+
+
+    /* Submit workflow */
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .rpc(
+          "submit_ctr_alteration",
+          {
+
+            p_alteration_id:
+              currentAlterationId
+
+          }
+        );
+
+
+    if (
+      error
+    ) {
+
+      throw error;
+
+    }
+
+
+    currentAlterationStatus =
+      data ||
+      "SUBMITTED";
+
+
+    alterationContextLoaded =
+      true;
+
+
+    applyStationBuilderAccessMode();
+
+
+    submitAlterationButton.disabled =
+      true;
+
+
+    submitAlterationButton.textContent =
+      "Submitted";
+
+
+    setDraftStatus(
+      "Alteration submitted for officer review."
+    );
+
+
+    alert(
+      "CTR Alteration submitted successfully."
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Alteration submit error:",
+      error
+    );
+
+
+    submitAlterationButton.disabled =
+      false;
+
+
+    submitAlterationButton.textContent =
+      "Submit Alteration";
+
+
+    alert(
+      error.message ||
+      "CTR Alteration could not be submitted."
+    );
+
+  }
+
+}
 /* =========================================================
    EVENTS
 ========================================================= */
@@ -5986,7 +6261,7 @@ async function initializeStationBuilder() {
 
     await loadCtrDraft();
 
-
+    ensureSubmitAlterationButton();
     /*
        Browser ko ek paint cycle dena useful hai,
        especially large CTR drawings ke liye.
@@ -6095,3 +6370,281 @@ async function initializeStationBuilder() {
 ========================================================= */
 
 initializeStationBuilder();
+/* =========================================================
+   ALTERATION APPROVAL PDF REGISTRATION
+========================================================= */
+
+(() => {
+
+  "use strict";
+
+
+  const STORAGE_BUCKET =
+    "ctr-workflow-documents";
+
+
+  function getApprovalWorkflowId() {
+
+    return (
+      new URLSearchParams(
+        window.location.search
+      )
+        .get(
+          "workflow"
+        ) || ""
+    ).trim();
+
+  }
+
+
+  async function calculateGeneratedPdfSha256(
+    blob
+  ) {
+
+    const buffer =
+      await blob.arrayBuffer();
+
+
+    const digest =
+      await window.crypto.subtle.digest(
+        "SHA-256",
+        buffer
+      );
+
+
+    return Array
+      .from(
+        new Uint8Array(
+          digest
+        )
+      )
+      .map(
+        byte =>
+          byte
+            .toString(16)
+            .padStart(
+              2,
+              "0"
+            )
+      )
+      .join("");
+
+  }
+
+
+  function isExistingStorageObjectError(
+    error
+  ) {
+
+    const message =
+      String(
+        error?.message || ""
+      )
+        .toLowerCase();
+
+
+    return (
+      String(
+        error?.statusCode || ""
+      ) === "409"
+      ||
+      message.includes(
+        "already exists"
+      )
+      ||
+      message.includes(
+        "duplicate"
+      )
+    );
+
+  }
+
+
+  async function registerGeneratedApprovalPdf(
+    event
+  ) {
+
+    const workflowId =
+      getApprovalWorkflowId();
+
+
+    /*
+       Only run when CTR was opened from
+       Pending Approvals alteration workflow.
+    */
+
+    if (
+      !workflowId ||
+      !currentAlterationId ||
+      !isAlterationMode
+    ) {
+
+      return;
+
+    }
+
+
+    const blob =
+      event?.detail?.blob;
+
+
+    if (
+      !(blob instanceof Blob)
+    ) {
+
+      return;
+
+    }
+
+
+    try {
+
+      setDraftStatus(
+        "Registering approval PDF..."
+      );
+
+
+      const pdfHash =
+        await calculateGeneratedPdfSha256(
+          blob
+        );
+
+
+      const storagePath =
+        (
+          workflowId +
+          "/generated/" +
+          pdfHash +
+          ".pdf"
+        );
+
+
+      /* ===============================================
+         PRIVATE STORAGE
+      =============================================== */
+
+      const {
+        error: uploadError
+      } =
+        await supabaseClient
+          .storage
+          .from(
+            STORAGE_BUCKET
+          )
+          .upload(
+            storagePath,
+            blob,
+            {
+
+              contentType:
+                "application/pdf",
+
+              cacheControl:
+                "3600",
+
+              upsert:
+                false
+
+            }
+          );
+
+
+      if (
+        uploadError &&
+        !isExistingStorageObjectError(
+          uploadError
+        )
+      ) {
+
+        throw uploadError;
+
+      }
+
+
+      /* ===============================================
+         DATABASE REGISTRATION
+      =============================================== */
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient.rpc(
+          "register_generated_ctr_pdf",
+          {
+
+            p_workflow_id:
+              workflowId,
+
+            p_storage_path:
+              storagePath,
+
+            p_document_sha256:
+              pdfHash
+
+          }
+        );
+
+
+      if (error) {
+
+        throw error;
+
+      }
+
+
+      console.log(
+        "CTR approval PDF registered:",
+        data
+      );
+
+
+      setDraftStatus(
+        "Approval PDF registered"
+      );
+
+
+      alert(
+        "CTR PDF generated and registered successfully."
+      );
+
+
+      window.location.href =
+        (
+          "workflow-sign.html?workflow=" +
+          encodeURIComponent(
+            workflowId
+          )
+        );
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "CTR approval PDF registration error:",
+        error
+      );
+
+
+      setDraftStatus(
+        "Approval PDF registration failed"
+      );
+
+
+      alert(
+        error?.message ||
+        "CTR PDF could not be registered for approval."
+      );
+
+    }
+
+  }
+
+
+  window.addEventListener(
+    "ctr-pdf-generated",
+    registerGeneratedApprovalPdf
+  );
+
+})();

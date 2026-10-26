@@ -2,13 +2,36 @@
    CTR MANAGEMENT SYSTEM
    AUTHENTICATION GUARD
 
-   Browser session check only.
-   Actual data authorization remains protected by Supabase RLS.
+   RLS = actual security boundary.
+   This guard only prevents unauthenticated page access.
 ========================================================= */
 
-async function protectCtrPage() {
+(async function () {
 
-  try {
+  "use strict";
+
+
+  function goToLogin() {
+
+    if (
+      !window.location.pathname
+        .endsWith("/login.html")
+    ) {
+
+      window.location.replace(
+        "login.html"
+      );
+
+    }
+
+  }
+
+
+  async function getStableSession() {
+
+    /* ---------------------------------------------
+       FIRST CHECK
+    --------------------------------------------- */
 
     const {
       data,
@@ -22,54 +45,186 @@ async function protectCtrPage() {
     if (error) {
 
       console.error(
-        "CTR session check error:",
+        "CTR initial session check:",
         error
       );
 
     }
 
 
-    const session =
-      data?.session;
+    if (data?.session) {
 
-
-    if (!session) {
-
-      window.location.replace(
-        "login.html"
-      );
-
-      return false;
+      return data.session;
 
     }
 
 
-    return true;
+    /* ---------------------------------------------
+       SUPABASE MAY STILL BE RESTORING LOCAL SESSION
+       Wait briefly for INITIAL_SESSION / SIGNED_IN.
+    --------------------------------------------- */
+
+    return await new Promise(
+      (resolve) => {
+
+        let finished =
+          false;
+
+        let subscription =
+          null;
+
+
+        const finish =
+          (session) => {
+
+            if (finished) {
+              return;
+            }
+
+            finished =
+              true;
+
+
+            if (subscription) {
+
+              subscription
+                .unsubscribe();
+
+            }
+
+
+            resolve(
+              session || null
+            );
+
+          };
+
+
+        const timer =
+          window.setTimeout(
+            () => {
+
+              finish(null);
+
+            },
+            1500
+          );
+
+
+        const {
+          data: listenerData
+        } =
+          supabaseClient
+            .auth
+            .onAuthStateChange(
+              (
+                event,
+                session
+              ) => {
+
+                if (
+                  event ===
+                    "INITIAL_SESSION" ||
+                  event ===
+                    "SIGNED_IN" ||
+                  event ===
+                    "TOKEN_REFRESHED"
+                ) {
+
+                  if (session) {
+
+                    window.clearTimeout(
+                      timer
+                    );
+
+                    finish(
+                      session
+                    );
+
+                  }
+
+                }
+
+
+                if (
+                  event ===
+                  "SIGNED_OUT"
+                ) {
+
+                  window.clearTimeout(
+                    timer
+                  );
+
+                  finish(null);
+
+                }
+
+              }
+            );
+
+
+        subscription =
+          listenerData
+            ?.subscription ||
+          null;
+
+      }
+    );
+
+  }
+
+
+  try {
+
+    if (
+      typeof supabaseClient ===
+      "undefined"
+    ) {
+
+      console.error(
+        "Supabase client is not loaded."
+      );
+
+      return;
+
+    }
+
+
+    const session =
+      await getStableSession();
+
+
+    if (!session) {
+
+      goToLogin();
+
+      return;
+
+    }
+
+
+    console.log(
+      "CTR authenticated session:",
+      session.user?.id
+    );
 
   }
 
   catch (error) {
 
+    /*
+       Network/session refresh errors must NOT
+       automatically throw an already logged-in
+       user back to login.
+
+       Database RLS continues protecting all data.
+    */
+
     console.error(
-      "CTR authentication check failed:",
+      "CTR authentication guard error:",
       error
     );
 
-
-    window.location.replace(
-      "login.html"
-    );
-
-
-    return false;
-
   }
 
-}
-
-
-/* =========================================================
-   START SECURITY CHECK
-========================================================= */
-
-protectCtrPage();
+})();
