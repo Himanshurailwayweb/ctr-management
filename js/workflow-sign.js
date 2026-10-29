@@ -3329,77 +3329,160 @@
   ===================================================== */
 
   async function performFinalApproval(
-    storagePath
-  ) {
+  storagePath
+) {
 
-    const client =
-      await waitForSupabaseClient();
-
-
-    if (
-      !client
-    ) {
-
-      throw new Error(
-        "Supabase connection is unavailable."
-      );
-
-    }
+  const client =
+    await waitForSupabaseClient();
 
 
-    const {
-      data,
-      error
-    } =
-      await client.rpc(
+  if (!client) {
 
-        "final_sign_and_approve_initial_ctr",
-
-        {
-
-          p_workflow_id:
-            workflowId,
-
-          p_source_document_id:
-            workspace
-              .current_document
-              .document_id,
-
-          p_signature_method:
-            DEFAULT_SIGNATURE_METHOD,
-
-          p_signature_reference:
-            getSignatureReference(),
-
-          p_final_signed_document_path:
-            storagePath,
-
-          p_final_signed_document_sha256:
-            selectedSignedFileHash,
-
-          p_remarks:
-            signingRemarks
-              ?.value
-              ?.trim() ||
-            null
-
-        }
-
-      );
-
-
-    if (
-      error
-    ) {
-
-      throw error;
-
-    }
-
-
-    return data;
+    throw new Error(
+      "Supabase connection is unavailable."
+    );
 
   }
+
+
+  /*
+     Decide whether this is:
+
+     1. Initial CTR
+     2. CTR Modification / Alteration
+
+     Different backend finalization RPC is used,
+     but the officer signing process remains the same.
+  */
+
+  const recordName =
+    String(
+      workspace?.record_name || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const workflowType =
+    String(
+      workspace?.workflow_type || ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const isAlterationWorkflow =
+
+    Boolean(
+      workspace?.alteration_id
+    )
+
+    ||
+
+    workflowType ===
+      "ALTERATION"
+
+    ||
+
+    workflowType ===
+      "MODIFICATION"
+
+    ||
+
+    recordName.includes(
+      "modification"
+    )
+
+    ||
+
+    recordName.includes(
+      "alteration"
+    );
+
+
+  const rpcName =
+
+    isAlterationWorkflow
+
+      ? "final_sign_and_approve_alteration_ctr"
+
+      : "final_sign_and_approve_initial_ctr";
+
+
+  console.log(
+    "FINAL APPROVAL TYPE:",
+    {
+      rpcName,
+      recordName:
+        workspace?.record_name,
+      workflowType:
+        workspace?.workflow_type,
+      alterationId:
+        workspace?.alteration_id || null
+    }
+  );
+
+
+  const {
+    data,
+    error
+  } =
+    await client.rpc(
+      rpcName,
+      {
+
+        p_workflow_id:
+          workflowId,
+
+        p_source_document_id:
+          workspace
+            .current_document
+            .document_id,
+
+        p_signature_method:
+          DEFAULT_SIGNATURE_METHOD,
+
+        p_signature_reference:
+          signatureReference
+            ?.value
+            ?.trim() || null,
+
+        p_final_signed_document_path:
+          storagePath,
+
+        p_final_signed_document_sha256:
+          selectedSignedFileHash,
+
+        p_remarks:
+          signingRemarks
+            ?.value
+            ?.trim() || null
+
+      }
+    );
+
+
+  if (error) {
+
+    console.error(
+      "Final approval RPC error:",
+      error
+    );
+
+    throw error;
+
+  }
+
+
+  console.log(
+    "FINAL APPROVAL RESULT:",
+    data
+  );
+
+
+  return data;
+
+}
 
 
   /* =====================================================
